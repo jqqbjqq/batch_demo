@@ -1,0 +1,1 @@
+cmd /k ".\jre\bin\java -jar .\jre\warn-handler.jar VideoWarn 视频中台.xlsx,视频中台2.xlsx"
