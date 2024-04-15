@@ -1,5 +1,6 @@
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.ArrayUtil;
+import com.cctv.security.AlarmRuleQuery;
 import com.cctv.security.IpWarnQuery;
 import com.cctv.security.VideoWarn;
 import com.cctv.security.WarnFileMerge;
@@ -25,6 +26,9 @@ public class Start {
                 break;
             case "IpWarnQuery":
                 IpWarnQuery.main(args[1],args[2],args[3]);
+                break;
+            case "AlarmRuleQuery":
+                AlarmRuleQuery.main(args[1], args[2], args[3]);
                 break;
             default:
                 Console.log("启动参数错误");
