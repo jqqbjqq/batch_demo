@@ -2,6 +2,8 @@ package com.cctv.security;
 
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.collection.ListUtil;
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.FileNameUtil;
 import cn.hutool.core.lang.Console;
@@ -68,8 +70,9 @@ public class IpWarnQuery {
                 return;
             }
             Console.log("加载文件【{}】",sourceFileName);
+            TimeInterval timer = DateUtil.timer();
             writeExcel(FileNameUtil.mainName(sourceFileName) + GENE_FILE_SUFFIX, transform(login(auth),readExcel(sourceFileName)));
-            Console.log("全部处理完成");
+            Console.log("全部处理完成,耗时:{}秒",timer.intervalSecond());
         }catch (Exception ex){
             Console.error("失败-> 【{}】解析错误！",sourceFileName);
             ex.printStackTrace();
@@ -85,7 +88,8 @@ public class IpWarnQuery {
         }
         Console.log("Authorization:{}",token);
         List<IpWarn> ipWarnList = new CopyOnWriteArrayList<>();
-        List<List<String>> partition = ListUtil.partition(ipList, 10);
+        List<List<String>> partition = ListUtil.partition(ipList, 20);
+        Console.log("query api:{} \nwaiting...", URL.QUERY_WARN);
         for (List<String>  list: partition) {
             list.stream().parallel().forEach(ip->{
                 String repsBody =  HttpRequest.post(DOMAIN +URL.QUERY_WARN)
@@ -93,7 +97,6 @@ public class IpWarnQuery {
                         .header(Header.CONTENT_TYPE, ContentType.JSON.getValue())
                         .body(JSONUtil.createObj().set("QueryKey", ip).set("Action", "DescribeSingeTiInfo").toString())
                         .execute().body();
-                Console.log("login api:{}\nbody:{}",URL.LOGIN,repsBody);
                 JSON json = JSONUtil.parse(repsBody);
                 String threatType = JSONUtil.getByPath(json, "Response.Data[0].ThreatType")+"";
                 String tags = JSONUtil.getByPath(json, "Response.Data[0].Tags")+"";

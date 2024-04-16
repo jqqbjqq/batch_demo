@@ -1,5 +1,7 @@
 package com.cctv.security;
 
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.FileNameUtil;
 import cn.hutool.core.lang.Console;
@@ -43,8 +45,9 @@ public class WarnFileMerge {
                 return;
             }
             Console.log("加载文件【{}】",sourceFileName);
+            TimeInterval timer = DateUtil.timer();
             writeExcel(FileNameUtil.mainName(sourceFileName) + GENE_FILE_SUFFIX,readExcel(sourceFileName));
-            Console.log("全部处理完成");
+            Console.log("全部处理完成,耗时:{}秒",timer.intervalSecond());
         }catch (Exception ex){
             Console.error("失败-> 【{}】解析错误！",sourceFileName);
             ex.printStackTrace();

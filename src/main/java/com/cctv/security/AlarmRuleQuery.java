@@ -1,7 +1,10 @@
 package com.cctv.security;
 
+import static java.util.Calendar.MINUTE;
+
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.FileNameUtil;
 import cn.hutool.core.lang.Console;
@@ -23,6 +26,7 @@ import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import lombok.Builder;
 import lombok.Data;
@@ -47,6 +51,9 @@ public class AlarmRuleQuery {
         public static final String QUERY_RULE = "/api/AppAlarmStrategyManager/rule/getlist";
     }
 
+    public static void main(String[] args) throws Exception {
+    }
+
     public static void main(String sourceFileName, String domain,String auth) {
         try {
             if(StrUtil.isBlank(domain)){
@@ -62,8 +69,9 @@ public class AlarmRuleQuery {
                 Console.log("未指定加载的文件");
                 return;
             }
+            TimeInterval timer = DateUtil.timer();
             writeExcel(FileNameUtil.mainName(sourceFileName) + GENE_FILE_SUFFIX, transform(login(auth)));
-            Console.log("全部处理完成");
+            Console.log("全部处理完成,耗时:{}秒",timer.intervalSecond());
         }catch (Exception ex){
             Console.error("失败-> 【{}】解析错误！",sourceFileName);
             ex.printStackTrace();
@@ -85,7 +93,7 @@ public class AlarmRuleQuery {
                               + ",\"filterObj\":{\"Fseverity\":[],\"Fcategory\":[],\"Fsubcategory\":[],\"Fkillchain\":[],\"Fresult\":[],\"Frule_action\":[]}"
                               + ",\"dirObj\":{},\"mustObj\":{}}")
                 .execute().body();
-        Console.log("login api:{} waiting... \n", URL.QUERY_RULE);
+        Console.log("query api:{} \nwaiting...", URL.QUERY_RULE);
         JSONArray jsonArray = (JSONArray)JSONUtil.getByPath(JSONUtil.parse(repsBody), "data.list");
         for (Object obj : jsonArray) {
             JSONObject jsonObject = JSONUtil.parseObj(obj);
@@ -138,9 +146,8 @@ public class AlarmRuleQuery {
         String repsBody = reps.body();
         Console.log("login api:{}\nsessionId:{};body:{}", URL.LOGIN, sessionId,repsBody);
         JSON json = JSONUtil.parse(repsBody);
-
         Object error = JSONUtil.getByPath(json, "returnCode");
-        if(ObjectUtil.isNotNull(error)&&Integer.parseInt(error.toString())==-1){
+        if(Integer.parseInt(error.toString())==-1){
             Console.log("账号密码错误！");
             return null;
         }

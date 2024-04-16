@@ -1,5 +1,7 @@
 package com.cctv.security;
 
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.FileNameUtil;
 import cn.hutool.core.lang.Console;
@@ -45,6 +47,7 @@ public class VideoWarn {
             Scanner scanner = new Scanner(System.in);
             Console.log("请输入需要处理的警告级别，1：高危 2：中危 3：低危");
             String inputLevel = scanner.nextLine();
+            TimeInterval timer = DateUtil.timer();
             Arrays.stream(sourceFileNames).parallel().forEach(fileName->{ //
                 if (!FileUtil.exist(ABSOLUTE_PATH + fileName)) {
                     Console.error("失败-> 【{}】文件不存在！",fileName);
@@ -57,7 +60,7 @@ public class VideoWarn {
                     ex.printStackTrace();
                 }
             });
-            Console.log("全部处理完成");
+            Console.log("全部处理完成,耗时:{}秒",timer.intervalSecond());
         }finally {
             ThreadUtil.sleep(Long.MAX_VALUE);
         }
