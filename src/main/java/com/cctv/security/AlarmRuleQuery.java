@@ -1,5 +1,7 @@
 package com.cctv.security;
 
+import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.FileNameUtil;
 import cn.hutool.core.lang.Console;
@@ -44,25 +46,6 @@ public class AlarmRuleQuery {
         public static final String QUERY_RULE = "/api/AppAlarmStrategyManager/rule/getlist";
     }
 
-    public static void main(String[] args) {
-        /*
-        String repsBody =  HttpRequest.post(DOMAIN + URL.QUERY_RULE)
-                .header(Header.AUTHORIZATION, "CtxBMWPG6LNxUr8vp+BSyDjUIpnUJ76tRUk=")
-                .cookie("SESSION_ID=SESSION_ID:759e2457-aa3d-418b-acb3-49cc2145f623")
-                .header(Header.CONTENT_TYPE, ContentType.JSON.getValue())
-                .body(" {\"search\":\"\",\"pageSize\":2,\"page\":1,\"dir\":\"desc\",\"sort\":\"Fid\""
-                              + ",\"filterObj\":{\"Fseverity\":[],\"Fcategory\":[],\"Fsubcategory\":[],\"Fkillchain\":[],\"Fresult\":[],\"Frule_action\":[]}"
-                              + ",\"dirObj\":{},\"mustObj\":{}}")
-                .execute().body();
-        Console.log("login api:{}\nbody:{}", URL.QUERY_RULE, repsBody);
-        JSONArray jsonArray = (JSONArray)JSONUtil.getByPath(JSONUtil.parse(repsBody), "data.list");
-        for (Object obj : jsonArray) {
-            JSONObject jsonObject = JSONUtil.parseObj(obj);
-            System.out.println(jsonObject.get("Fid"));
-        }
-        */
-    }
-
     public static void main(String sourceFileName, String domain,String auth) {
         try {
             if(StrUtil.isBlank(domain)){
@@ -97,7 +80,7 @@ public class AlarmRuleQuery {
                 .header(Header.AUTHORIZATION, auth[0])
                 .header("SESSION_ID","SESSION_ID="+auth[1])
                 .header(Header.CONTENT_TYPE, ContentType.JSON.getValue())
-                .body(" {\"search\":\"\",\"pageSize\":2,\"page\":1,\"dir\":\"desc\",\"sort\":\"Fid\""
+                .body(" {\"search\":\"\",\"pageSize\":2000,\"page\":1,\"dir\":\"desc\",\"sort\":\"Fid\""
                               + ",\"filterObj\":{\"Fseverity\":[],\"Fcategory\":[],\"Fsubcategory\":[],\"Fkillchain\":[],\"Fresult\":[],\"Frule_action\":[]}"
                               + ",\"dirObj\":{},\"mustObj\":{}}")
                 .execute().body();
@@ -109,16 +92,21 @@ public class AlarmRuleQuery {
             String fname = jsonObject.get("Fname")+"";
             String fcategory = jsonObject.get("Fcategory")+"";
             String fkillchain = jsonObject.get("Fkillchain")+"";
-            String fpattern = jsonObject.get("Fpattern")+"";
             String fsubcategory = jsonObject.get("Fsubcategory")+"";
+            String fpattern = jsonObject.get("Fpattern")+"";
+            String conditions = JSONUtil.getByPath(JSONUtil.parse(fpattern), "conditions[0].match")+"";
             ruleList.add(Rule.builder().fid(fid).fname(fname).fcategory(fcategory)
-                                 .fkillchain(fkillchain).conditions(fpattern)
+                                 .fkillchain(fkillchain).conditions(conditions)
                                  .fsubcategory(fsubcategory).build());
         }
         return ruleList;
     }
 
     private static void writeExcel(String geneFileName,List<Rule> ruleList) {
+        if(CollectionUtil.isEmpty(ruleList)){
+            Console.error("生成文件失败，数据为空");
+            return;
+        }
         File file = new File(ABSOLUTE_PATH+ geneFileName);
         FileUtil.del(file);
         ExcelWriter writer = ExcelUtil.getWriter(file)
@@ -148,12 +136,13 @@ public class AlarmRuleQuery {
         String repsBody = reps.body();
         Console.log("login api:{}\nsessionId:{};body:{}", URL.LOGIN, sessionId,repsBody);
         JSON json = JSONUtil.parse(repsBody);
-        Object error = JSONUtil.getByPath(json, "Response.Error");
-        if(ObjectUtil.isNotNull(error)){
+
+        Object error = JSONUtil.getByPath(json, "returnCode");
+        if(ObjectUtil.isNotNull(error)&&Integer.parseInt(error.toString())==-1){
             Console.log("账号密码错误！");
             return null;
         }
-        return new String[]{JSONUtil.getByPath(json, "Response.Data.Token")+"",sessionId};
+        return new String[]{JSONUtil.getByPath(json, "token")+"",sessionId};
     }
 
 
