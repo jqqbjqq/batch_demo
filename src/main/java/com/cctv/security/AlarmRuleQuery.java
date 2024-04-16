@@ -1,7 +1,7 @@
 package com.cctv.security;
 
 import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.collection.ListUtil;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.FileNameUtil;
 import cn.hutool.core.lang.Console;
@@ -19,10 +19,11 @@ import cn.hutool.json.JSONUtil;
 import cn.hutool.poi.excel.ExcelUtil;
 import cn.hutool.poi.excel.ExcelWriter;
 import java.io.File;
-import java.net.HttpCookie;
 import java.nio.file.Paths;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 import lombok.Builder;
 import lombok.Data;
 import org.apache.poi.ss.usermodel.HorizontalAlignment;
@@ -37,7 +38,7 @@ public class AlarmRuleQuery {
     //获取当前用户的执行路径
     public static final String ABSOLUTE_PATH = Paths.get("").toAbsolutePath()+File.separator;
 
-    public static final String GENE_FILE_SUFFIX = "_new.xlsx";
+    public static final String GENE_FILE_SUFFIX = "_"+DateUtil.today()+".xlsx";
 
     public static String DOMAIN = "https://10.232.1.8";
 
@@ -80,11 +81,11 @@ public class AlarmRuleQuery {
                 .header(Header.AUTHORIZATION, auth[0])
                 .header("SESSION_ID","SESSION_ID="+auth[1])
                 .header(Header.CONTENT_TYPE, ContentType.JSON.getValue())
-                .body(" {\"search\":\"\",\"pageSize\":2000,\"page\":1,\"dir\":\"desc\",\"sort\":\"Fid\""
+                .body(" {\"search\":\"\",\"pageSize\":10000,\"page\":1,\"dir\":\"desc\",\"sort\":\"Fid\""
                               + ",\"filterObj\":{\"Fseverity\":[],\"Fcategory\":[],\"Fsubcategory\":[],\"Fkillchain\":[],\"Fresult\":[],\"Frule_action\":[]}"
                               + ",\"dirObj\":{},\"mustObj\":{}}")
                 .execute().body();
-        Console.log("login api:{}\nbody:{}", URL.QUERY_RULE, repsBody);
+        Console.log("login api:{} waiting... \n", URL.QUERY_RULE);
         JSONArray jsonArray = (JSONArray)JSONUtil.getByPath(JSONUtil.parse(repsBody), "data.list");
         for (Object obj : jsonArray) {
             JSONObject jsonObject = JSONUtil.parseObj(obj);
@@ -99,7 +100,8 @@ public class AlarmRuleQuery {
                                  .fkillchain(fkillchain).conditions(conditions)
                                  .fsubcategory(fsubcategory).build());
         }
-        return ruleList;
+        return ruleList.stream().peek(e->e.setSortId(Integer.valueOf(e.getFid())))
+                .sorted(Comparator.comparing(Rule::getSortId)).collect(Collectors.toList());
     }
 
     private static void writeExcel(String geneFileName,List<Rule> ruleList) {
@@ -155,6 +157,7 @@ public class AlarmRuleQuery {
         private String fsubcategory;//告警子类别
         private String conditions;//条件预览
         private String fkillchain; // 攻击阶段
+        private Integer sortId; //排序ID
     }
 
 
