@@ -14,8 +14,6 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.ContentType;
 import cn.hutool.http.Header;
 import cn.hutool.http.HttpRequest;
-import cn.hutool.http.HttpResponse;
-import cn.hutool.json.JSON;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
@@ -24,19 +22,12 @@ import cn.hutool.poi.excel.ExcelWriter;
 import java.io.File;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Scanner;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
 import org.apache.poi.ss.usermodel.HorizontalAlignment;
 import org.apache.poi.ss.usermodel.VerticalAlignment;
 
@@ -80,11 +71,9 @@ public class YunjingHostQuery {
             Console.log("请使用浏览器成功登录云镜系统后，按F12进入调试模式，点击Network选项找到任意链接，查看右侧Header项的cookie和X-Csrfcode");
             Scanner scanner = new Scanner(System.in);
             Console.log("请输入X-Csrfcode");
-            COOKIE  = scanner.nextLine();
-
+            XCSRFCODE  = scanner.nextLine();
             Console.log("请输入Cookie");
             COOKIE  = scanner.nextLine();
-
             TimeInterval timer = DateUtil.timer();
             writeExcel(FileNameUtil.mainName(sourceFileName) + GENE_FILE_SUFFIX, transform());
             Console.log("全部处理完成,耗时:{}秒",timer.intervalSecond());
@@ -110,10 +99,9 @@ public class YunjingHostQuery {
                               + ",\"data\":{\"Version\":\"2021-08-30\",\"Language\":\"zh-CN\",\"Order\":\"DESC\",\"By\":\"ItemCount\""
                               + ",\"Offset\":0,\"Limit\":10000,\"Filters\":[{\"Name\":\"DetectStatus\",\"Values\":[0],\"ExactMatch\":false}]}}")
                 .execute().body();
-        Console.log("query api:{} \nwaiting...", URL.HOST_LIST);
+        Console.log("query api:{}\nbody:{}\nwaiting...", URL.HOST_LIST, repsBody);
         Object error = JSONUtil.getByPath(JSONUtil.parse(repsBody), "data.Response.Error");
         if(ObjectUtil.isNotNull(error)){
-            Console.log("接口调用错误错误！msg:{}",repsBody);
             return null;
         }
         List<Item> itemList = new ArrayList<>();

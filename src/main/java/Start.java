@@ -4,6 +4,7 @@ import com.cctv.security.AlarmRuleQuery;
 import com.cctv.security.IpWarnQuery;
 import com.cctv.security.VideoWarn;
 import com.cctv.security.WarnFileMerge;
+import com.cctv.security.YunjingHostQuery;
 
 /**
  * @author jiqq
@@ -29,6 +30,9 @@ public class Start {
                 break;
             case "AlarmRuleQuery":
                 AlarmRuleQuery.main(args[1], args[2], args[3]);
+                break;
+            case "YunjingHostQuery":
+                YunjingHostQuery.main(args[1], args[2]);
                 break;
             default:
                 Console.log("启动参数错误");
