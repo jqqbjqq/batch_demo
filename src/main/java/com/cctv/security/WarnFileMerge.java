@@ -19,7 +19,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.Builder;
 import lombok.Data;
+import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.VerticalAlignment;
 
 /**
@@ -101,7 +103,8 @@ public class WarnFileMerge {
                 .addHeaderAlias("attackerIp", "攻击者ip")
                 .addHeaderAlias("victimIp", "受害者ip");
         writer.setOnlyAlias(true);
-        writer.getStyleSet().setAlign(HorizontalAlignment.LEFT, VerticalAlignment.CENTER);
+        writer.getStyleSet().setBorder(BorderStyle.NONE, IndexedColors.AUTOMATIC)
+                .setAlign(HorizontalAlignment.LEFT, VerticalAlignment.CENTER);
         // 一次性写出内容，使用默认样式，强制输出标题
         writer.write(finalLogs, true);
         // 关闭writer，释放内存

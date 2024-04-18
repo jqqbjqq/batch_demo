@@ -20,7 +20,9 @@ import java.util.Scanner;
 import lombok.Builder;
 import lombok.Data;
 import org.apache.commons.compress.utils.Lists;
+import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.VerticalAlignment;
 import org.apache.poi.util.StringUtil;
 
@@ -127,7 +129,8 @@ public class VideoWarn {
                 .addHeaderAlias("bugInfo", "漏洞信息")
                 .addHeaderAlias("assetType", "资产类型");
         writer.setOnlyAlias(true);
-        writer.getStyleSet().setAlign(HorizontalAlignment.LEFT, VerticalAlignment.CENTER);
+        writer.getStyleSet().setBorder(BorderStyle.NONE, IndexedColors.AUTOMATIC)
+                .setAlign(HorizontalAlignment.LEFT, VerticalAlignment.CENTER);
         // 一次性写出内容，使用默认样式，强制输出标题
         writer.write(finalLogs, true);
         // 关闭writer，释放内存

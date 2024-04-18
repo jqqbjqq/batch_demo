@@ -25,7 +25,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 import lombok.Builder;
 import lombok.Data;
+import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.VerticalAlignment;
 
 /**
@@ -123,7 +125,8 @@ public class IpWarnQuery {
                 .addHeaderAlias("threatType", "威胁类型")
                 .addHeaderAlias("tags", "情报标签");
         writer.setOnlyAlias(true);
-        writer.getStyleSet().setAlign(HorizontalAlignment.LEFT, VerticalAlignment.CENTER);
+        writer.getStyleSet().setBorder(BorderStyle.NONE, IndexedColors.AUTOMATIC)
+                .setAlign(HorizontalAlignment.LEFT, VerticalAlignment.CENTER);
         // 一次性写出内容，使用默认样式，强制输出标题
         writer.write(ipWarnList, true);
         // 关闭writer，释放内存
