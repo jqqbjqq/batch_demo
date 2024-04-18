@@ -50,7 +50,7 @@ public class YunjingHostQuery {
 
     public static final String GENE_FILE_SUFFIX = "_"+DateUtil.today()+".xlsx";
 
-    public static Dict LEVEL_DICT = Dict.create().set("1", "低危").set("2", "中危").set("3", "高危");
+    public static Dict LEVEL_DICT = Dict.create().set("0","提示").set("1", "低危").set("2", "中危").set("3", "高危").set("4","严重");
 
     public static String COOKIE, XCSRFCODE,DOMAIN = "http://oapi.tcep-bj.cloud.cctv.com";
 
@@ -133,8 +133,8 @@ public class YunjingHostQuery {
                 .header("X-Csrfcode",XCSRFCODE)
                 .header(Header.CONTENT_TYPE, ContentType.JSON.getValue())
                 .body(StrUtil.format("{\"region\":\"bjprivate\",\"serviceType\":\"ocwp\",\"action\":\"DescribeBaselineItemList\""
-                                             + ",\"data\":{\"Version\":\"2021-08-30\",\"Language\":\"zh-CN\",\"Order\":\"DESC\",\"By\":\"LastTime\""
-                                             + ",\"Offset\":0,\"Limit\":10000,\"Filters\":[{\"Name\":\"HostId\",\"Values\":[\"{}\"]}]}}",host.hostId))
+                                             + ",\"data\":{\"Version\":\"2021-08-30\",\"Language\":\"zh-CN\",\"Order\":\"DESC\",\"By\":\"LastTime\",\"Offset\":0,\"Limit\":10000"
+                                             + ",\"Filters\":[{\"Name\":\"DetectStatus\",\"Values\":[0],\"ExactMatch\":false},{\"Name\":\"HostId\",\"Values\":[\"{}\"]}]}}",host.hostId))
                 .execute().body();
         Object error = JSONUtil.getByPath(JSONUtil.parse(repsBody), "data.Response.Error");
         if(ObjectUtil.isNotNull(error)){
@@ -153,6 +153,7 @@ public class YunjingHostQuery {
                                  .itemName(json.get("ItemName")+"")
                                  .itemDesc(json.get("ItemDesc")+"")
                                  .fixMethod(json.get("FixMethod")+"")
+                                 .detectStatus("未通过")
                                  .level(LEVEL_DICT.get(json.get("Level")+"")+"")
                                  .build());
         }
@@ -170,6 +171,7 @@ public class YunjingHostQuery {
                 .addHeaderAlias("hostId", "主机ID")
                 .addHeaderAlias("hostIp", "主机IP")
                 .addHeaderAlias("hostName", "主机名字")
+                .addHeaderAlias("detectStatus", "检测状态")
                 .addHeaderAlias("itemName", "检测项名称")
                 .addHeaderAlias("itemDesc", "检测项描述")
                 .addHeaderAlias("level", "威胁等级")
@@ -189,6 +191,7 @@ public class YunjingHostQuery {
         private String hostId; //主机ID
         private String hostIp; //主机IP
         private String hostName;//主机名称
+        private String detectStatus;//检测状态
         private String itemName;//检测项名称
         private String itemDesc;//检测项描述
         private String fixMethod;//修复建议
