@@ -29,6 +29,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Scanner;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
@@ -76,6 +77,13 @@ public class YunjingHostQuery {
                 Console.log("未指定加载的文件");
                 return;
             }
+            Console.log("请使用浏览器成功登录云镜系统后，按F12进入调试模式，点击Network选项找到任意链接，查看右侧Header项的cookie和X-Csrfcode");
+            Scanner scanner = new Scanner(System.in);
+            Console.log("请输入X-Csrfcode");
+            COOKIE  = scanner.nextLine();
+
+            Console.log("请输入Cookie");
+            COOKIE  = scanner.nextLine();
 
             TimeInterval timer = DateUtil.timer();
             writeExcel(FileNameUtil.mainName(sourceFileName) + GENE_FILE_SUFFIX, transform());
