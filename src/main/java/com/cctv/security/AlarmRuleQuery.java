@@ -1,7 +1,5 @@
 package com.cctv.security;
 
-import static java.util.Calendar.MINUTE;
-
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
@@ -26,7 +24,6 @@ import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import lombok.Builder;
 import lombok.Data;
@@ -166,14 +163,6 @@ public class AlarmRuleQuery {
         private String fkillchain; // 攻击阶段
         private Integer sortId; //排序ID
     }
-
-
-
-
-
-
-
-
 
 
 }
