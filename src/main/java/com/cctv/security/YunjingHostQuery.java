@@ -46,7 +46,7 @@ public class YunjingHostQuery {
 
     public static Dict LEVEL_DICT = Dict.create().set("0","提示").set("1", "低危").set("2", "中危").set("3", "高危").set("4","严重");
 
-    public static String COOKIE, XCSRFCODE,DOMAIN = "http://oapi.tcep-bj.cloud.cctv.com";
+    public static String COOKIE, XCSRFCODE,REGION,DOMAIN = "http://oapi.tcep-bj.cloud.cctv.com";
 
     public static class URL{
         public static final String HOST_LIST = "/capi/v3?i=ocwp/DescribeBaselineHostDetectList";
@@ -56,16 +56,22 @@ public class YunjingHostQuery {
     public static void main(String[] args) throws Exception {
         COOKIE = "tce_language=zh-CN; req_session_id=90776c99-18df-4f5b-856c-d55fed1730e0; pageSeesionToken=71df2c42559f970c4d1251739b8be337; user_uin=909622298; appId=1; user_skey=fb175d1foYc/NY9AXNN/0MDQvUCdHsD6lbI1vGm2snoQL9ns7O4Jruy595SIjelimVaG1g; user_id=Security; owner_uin=909619400";
         XCSRFCODE  = "1097979825";
-        main("host.xlsx",DOMAIN);
+        REGION = "bjprivate";
+        main("host.xlsx",DOMAIN,REGION);
     }
 
-    public static void main(String sourceFileName, String domain) {
+    public static void main(String sourceFileName, String domain ,String region) {
         try {
             if(StrUtil.isBlank(domain)){
                 Console.log("未指定domain");
                 return;
             }
             DOMAIN = domain;
+            if(StrUtil.isBlank(region)){
+                Console.log("未指定region");
+                return;
+            }
+            REGION = region;
             if(StrUtil.isBlank(sourceFileName)){
                 Console.log("未指定加载的文件");
                 return;
@@ -97,7 +103,7 @@ public class YunjingHostQuery {
                 .header("Cookie",COOKIE)
                 .header("X-Csrfcode",XCSRFCODE)
                 .header(Header.CONTENT_TYPE, ContentType.JSON.getValue())
-                .body("{\"region\":\"bjprivate\",\"serviceType\":\"ocwp\",\"action\":\"DescribeBaselineHostDetectList\""
+                .body("{\"region\":\""+REGION+"\",\"serviceType\":\"ocwp\",\"action\":\"DescribeBaselineHostDetectList\""
                               + ",\"data\":{\"Version\":\"2021-08-30\",\"Language\":\"zh-CN\",\"Order\":\"DESC\",\"By\":\"ItemCount\""
                               + ",\"Offset\":0,\"Limit\":10000,\"Filters\":[{\"Name\":\"DetectStatus\",\"Values\":[0],\"ExactMatch\":false}]}}")
                 .execute().body();
@@ -130,7 +136,7 @@ public class YunjingHostQuery {
                 .header("Cookie",COOKIE)
                 .header("X-Csrfcode",XCSRFCODE)
                 .header(Header.CONTENT_TYPE, ContentType.JSON.getValue())
-                .body(StrUtil.format("{\"region\":\"bjprivate\",\"serviceType\":\"ocwp\",\"action\":\"DescribeBaselineItemList\""
+                .body(StrUtil.format("{\"region\":\""+REGION+"\",\"serviceType\":\"ocwp\",\"action\":\"DescribeBaselineItemList\""
                                              + ",\"data\":{\"Version\":\"2021-08-30\",\"Language\":\"zh-CN\",\"Order\":\"DESC\",\"By\":\"LastTime\",\"Offset\":0,\"Limit\":10000"
                                              + ",\"Filters\":[{\"Name\":\"DetectStatus\",\"Values\":[0],\"ExactMatch\":false},{\"Name\":\"HostId\",\"Values\":[\"{}\"]}]}}",host.hostId))
                 .execute().body();

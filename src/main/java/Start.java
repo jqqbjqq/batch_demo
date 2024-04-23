@@ -32,7 +32,7 @@ public class Start {
                 AlarmRuleQuery.main(args[1], args[2], args[3]);
                 break;
             case "YunjingHostQuery":
-                YunjingHostQuery.main(args[1], args[2]);
+                YunjingHostQuery.main(args[1], args[2],args[3]);
                 break;
             default:
                 Console.log("启动参数错误");
