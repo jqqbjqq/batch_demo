@@ -7,7 +7,6 @@ import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.FileNameUtil;
 import cn.hutool.core.lang.Console;
-import cn.hutool.core.lang.Dict;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
@@ -38,15 +37,15 @@ import org.apache.poi.ss.usermodel.VerticalAlignment;
  * @date 2024/4/11
  * @description
  */
-public class YunjingHostQuery {
+public class BaselineRuleList {
     //获取当前用户的执行路径
     public static final String ABSOLUTE_PATH = Paths.get("").toAbsolutePath()+File.separator;
 
     public static final String GENE_FILE_SUFFIX = "_"+DateUtil.today()+".xlsx";
 
-    public static Dict LEVEL_DICT = Dict.create().set("0","提示").set("1", "低危").set("2", "中危").set("3", "高危").set("4","严重");
-
     public static String COOKIE, XCSRFCODE,REGION,DOMAIN = "http://oapi.tcep-bj.cloud.cctv.com";
+
+    public static Boolean IS_INPUT = true;
 
     public static class URL{
         public static final String HOST_LIST = "/capi/v3?i=ocwp/DescribeBaselineHostDetectList";
@@ -54,11 +53,12 @@ public class YunjingHostQuery {
     }
 
     public static void main(String[] args) throws Exception {
-        COOKIE = "tce_language=zh-CN; req_session_id=a75b6205-e2d8-40fa-b033-4992d986798e; user_uin=909622312; appId=1; user_id=Security; owner_uin=909619400; camusername=lilongfei; loginType=subaccount; pageSeesionToken=5b1770b4a879d7ef24b54f0a8617013c; user_skey=b19ea696ju7N9snbvkY4sSLGw9AIWyBJ8gNQ/Ervllfw1X2nV24izDttRDGJW8N5PYolew";
-        XCSRFCODE  = "1758657365";
+        COOKIE = "tce_language=zh-CN; req_session_id=8b1e9aff-9074-48bc-b313-2c311a285923; user_uin=909622312; appId=1; user_id=Security; owner_uin=909619400; pageSeesionToken=dc61f68812bca26b86a7c8f2b0b022e7; user_skey=4a838fe7kJVdYk3E2YDUvYtO+uvt8qgN8ZSNTtk6Qu+9wNtdzYbAfX3dpUits9Or6LbxFQ";
+        XCSRFCODE  = "366452760";
         REGION = "bjdedicate";
         DOMAIN = "http://oapi.tced-bj.cloud.cctv.com";
-        main("host.xlsx",DOMAIN,REGION);
+        IS_INPUT = false;
+        main("基线检测设置.xlsx",DOMAIN,REGION);
     }
 
     public static void main(String sourceFileName, String domain ,String region) {
@@ -77,12 +77,14 @@ public class YunjingHostQuery {
                 Console.log("未指定加载的文件");
                 return;
             }
-            Console.log("请使用浏览器成功登录云镜系统后，按F12进入调试模式，点击Network选项找到任意链接，查看右侧Header项的cookie和X-Csrfcode");
-            Scanner scanner = new Scanner(System.in);
-            Console.log("请输入X-Csrfcode");
-            XCSRFCODE  = scanner.nextLine();
-            Console.log("请输入Cookie");
-            COOKIE  = scanner.nextLine();
+            if(IS_INPUT) {
+                Console.log("请使用浏览器成功登录云镜系统后，按F12进入调试模式，点击Network选项找到任意链接，查看右侧Header项的cookie和X-Csrfcode");
+                Scanner scanner = new Scanner(System.in);
+                Console.log("请输入X-Csrfcode");
+                XCSRFCODE = scanner.nextLine();
+                Console.log("请输入Cookie");
+                COOKIE = scanner.nextLine();
+            }
             TimeInterval timer = DateUtil.timer();
             writeExcel(FileNameUtil.mainName(sourceFileName) + GENE_FILE_SUFFIX, transform());
             Console.log("全部处理完成,耗时:{}秒",timer.intervalSecond());
@@ -99,68 +101,65 @@ public class YunjingHostQuery {
             Console.log("未指定cookis/xcsrfcode");
             return null;
         }
-
         String repsBody =  HttpRequest.post(DOMAIN + URL.HOST_LIST)
                 .header("Cookie",COOKIE)
                 .header("X-Csrfcode",XCSRFCODE)
                 .header(Header.CONTENT_TYPE, ContentType.JSON.getValue())
-                .body("{\"region\":\""+REGION+"\",\"serviceType\":\"ocwp\",\"action\":\"DescribeBaselineHostDetectList\""
-                              + ",\"data\":{\"Version\":\"2021-08-30\",\"Language\":\"zh-CN\",\"Order\":\"DESC\",\"By\":\"ItemCount\""
-                              + ",\"Offset\":0,\"Limit\":10000,\"Filters\":[{\"Name\":\"DetectStatus\",\"Values\":[0],\"ExactMatch\":false}]}}")
+                .body("{\"region\":\""+REGION+"\",\"serviceType\":\"ocwp\",\"action\":\"DescribeBaselineRuleList\""
+                              + ",\"data\":{\"Version\":\"2021-08-30\",\"Language\":\"zh-CN\",\"Offset\":0,\"Limit\":10000}}")
                 .execute().body();
         Console.log("query api:{}\nbody:{}\nwaiting...", URL.HOST_LIST, repsBody);
         Object error = JSONUtil.getByPath(JSONUtil.parse(repsBody), "data.Response.Error");
         if(ObjectUtil.isNotNull(error)){
             return null;
         }
-        List<Item> itemList = new ArrayList<>();
+        List<String> ruleIdList = new ArrayList<>();
         JSONArray jsonArray = (JSONArray)JSONUtil.getByPath(JSONUtil.parse(repsBody), "data.Response.List");
         for (Object obj : jsonArray) {
             JSONObject jsonObject = JSONUtil.parseObj(obj);
-            String hostId = jsonObject.get("HostId")+"";
-            String hostIp = jsonObject.get("HostIp")+"";
-            String hostName = jsonObject.get("HostName")+"";
-            itemList.add(Item.builder().hostId(hostId).hostIp(hostIp).hostName(hostName).build());
+            ruleIdList.add(jsonObject.get("RuleId")+"");
         }
         List<Item> itemList2 = Collections.synchronizedList(new ArrayList<>());
-        List<List<Item>> partition = ListUtil.partition(itemList, 20);
-        for (List<Item>  list: partition) {
-            list.stream().parallel().forEach(item->{
+        List<List<String>> partition = ListUtil.partition(ruleIdList, 20);
+        for (List<String>  ruleId: partition) {
+            ruleId.stream().parallel().forEach(item->{
                 itemList2.addAll(Optional.ofNullable(detail(item)).orElse(new ArrayList<>()));
             });
         }
         return itemList2;
     }
 
-    private static List<Item> detail(Item host) {
+    private static List<Item> detail(String ruleId) {
         String repsBody =  HttpRequest.post(DOMAIN + URL.ITEM_RULE)
                 .header("Cookie",COOKIE)
                 .header("X-Csrfcode",XCSRFCODE)
                 .header(Header.CONTENT_TYPE, ContentType.JSON.getValue())
                 .timeout(5000)
-                .body(StrUtil.format("{\"region\":\""+REGION+"\",\"serviceType\":\"ocwp\",\"action\":\"DescribeBaselineItemList\""
-                                             + ",\"data\":{\"Version\":\"2021-08-30\",\"Language\":\"zh-CN\",\"Order\":\"DESC\",\"By\":\"LastTime\",\"Offset\":0,\"Limit\":10000"
-                                             + ",\"Filters\":[{\"Name\":\"DetectStatus\",\"Values\":[0],\"ExactMatch\":false},{\"Name\":\"HostId\",\"Values\":[\"{}\"]}]}}",host.hostId))
+                .body(StrUtil.format("{\"region\":\""+REGION+"\",\"serviceType\":\"ocwp\",\"action\":\"DescribeBaselineItemInfo\""
+                                             + ",\"data\":{\"Version\":\"2021-08-30\",\"Language\":\"zh-CN\",\"Offset\":0,\"Limit\":10000"
+                                             + ",\"Filters\":[{\"Name\":\"RuleId\",\"Values\":[\"{}\"],\"ExactMatch\":false}]}}",ruleId))
                 .execute().body();
         Object error = JSONUtil.getByPath(JSONUtil.parse(repsBody), "data.Response.Error");
         if(ObjectUtil.isNotNull(error)){
-            Console.log("{host}:接口调用错误错误！msg:{}",host,repsBody);
+            Console.log("{ruleId}:接口调用错误错误！msg:{}",ruleId,repsBody);
             return null;
         }
-        Console.log("ip:{},query api:{}",host.getHostIp(), URL.ITEM_RULE);
+        Console.log("ruleId:{},query api:{}",ruleId, URL.ITEM_RULE);
         List<Item> itemList = new ArrayList<>();
         JSONArray jsonArray = (JSONArray)JSONUtil.getByPath(JSONUtil.parse(repsBody), "data.Response.List");
+        if(ObjectUtil.isNull(jsonArray)){
+            Console.log("ruleId:{} data.Response.List is null",ruleId);
+            return itemList;
+        }
         for (Object obj : jsonArray) {
             JSONObject json = JSONUtil.parseObj(obj);
-            itemList.add(Item.builder().hostId(host.getHostId())
-                                 .hostIp(host.getHostIp())
-                                 .hostName(host.getHostName())
-                                 .itemName(json.get("ItemName")+"")
-                                 .itemDesc(json.get("ItemDesc")+"")
-                                 .fixMethod(json.get("FixMethod")+"")
-                                 .detectStatus("未通过")
-                                 .level(LEVEL_DICT.get(json.get("Level")+"")+"")
-                                 .build());
+            itemList.add(Item.builder()
+                             .ruleId(json.get("RuleId")+"")
+                             .ruleName(json.get("RuleName")+"")
+                             .itemName(json.get("ItemName")+"")
+                             .itemDesc(json.get("ItemDesc")+"")
+                             .fixMethod(json.get("FixMethod")+"")
+                             .build());
         }
         return itemList;
     }
@@ -173,13 +172,9 @@ public class YunjingHostQuery {
         File file = new File(ABSOLUTE_PATH+ geneFileName);
         FileUtil.del(file);
         ExcelWriter writer = ExcelUtil.getWriter(file)
-                .addHeaderAlias("hostId", "主机ID")
-                .addHeaderAlias("hostIp", "主机IP")
-                .addHeaderAlias("hostName", "主机名字")
-                .addHeaderAlias("detectStatus", "检测状态")
+                .addHeaderAlias("ruleName", "检测规则名称")
                 .addHeaderAlias("itemName", "检测项名称")
-                .addHeaderAlias("itemDesc", "检测项描述")
-                .addHeaderAlias("level", "威胁等级")
+                .addHeaderAlias("itemDesc", "检测项说明")
                 .addHeaderAlias("fixMethod", "修复建议");
         writer.setOnlyAlias(true);
         writer.getStyleSet().setBorder(BorderStyle.NONE, IndexedColors.AUTOMATIC)
@@ -194,15 +189,11 @@ public class YunjingHostQuery {
     @Data
     @Builder
     static class Item {
-        private String hostId; //主机ID
-        private String hostIp; //主机IP
-        private String hostName;//主机名称
-        private String detectStatus;//检测状态
-        private String itemName;//检测项名称
-        private String itemDesc;//检测项描述
+        private String ruleId;//检测规则ID
+        private String ruleName;//检测规则名称
+        private String itemName; //检测项名称
+        private String itemDesc;//检测项说明
         private String fixMethod;//修复建议
-        private String level;//威胁等级
     }
-
 
 }

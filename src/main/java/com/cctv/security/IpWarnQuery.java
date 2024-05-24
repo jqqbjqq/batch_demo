@@ -20,8 +20,9 @@ import cn.hutool.poi.excel.ExcelUtil;
 import cn.hutool.poi.excel.ExcelWriter;
 import java.io.File;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 import lombok.Builder;
 import lombok.Data;
@@ -89,7 +90,7 @@ public class IpWarnQuery {
             return null;
         }
         Console.log("Authorization:{}",token);
-        List<IpWarn> ipWarnList = new CopyOnWriteArrayList<>();
+        List<IpWarn> ipWarnList = Collections.synchronizedList(new ArrayList<>());
         List<List<String>> partition = ListUtil.partition(ipList, 20);
         Console.log("query api:{} \nwaiting...", URL.QUERY_WARN);
         for (List<String>  list: partition) {
