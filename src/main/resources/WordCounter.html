@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Word Counter</title>
+</head>
+<body>
+    <input type="file" id="input-excel" multiple accept=".xlsx, .xls, .csv" value="">
+    <input type="text" id="keywords" style="width: 500px;"
+		value="Apache,Fastjson,Kibana,Linux,SSH,OpenSSL,Oracle,php,Samba,XStream,Redis,Spring" placeholder="输入统计字符">
+    <button onclick="countKeywords()">查找</button>
+    <button onclick="window.location.reload()">重置</button>
+    <div id="keyword-results" style="font-weight: bold; color: blue;"></div>
+    <div id="excel-data-container"></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
+    <script>
+        document.getElementById('input-excel').addEventListener('change', handleFiles, false);
+        function handleFiles(event) {
+            const files = Array.from(event.target.files);
+            const output = document.getElementById('excel-data-container');
+            output.innerHTML = ''; // 清空先前内容
+
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const data = e.target.result;
+                    const workbook = XLSX.read(data, { type: 'binary' });
+                    // 只处理第一个sheet
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const htmlstr = XLSX.utils.sheet_to_html(worksheet, { editable: false });
+                    const div = document.createElement('div');
+                    div.innerHTML = htmlstr;
+                    output.appendChild(div);
+                };
+                reader.readAsBinaryString(file);
+            });
+        }
+
+        function countKeywords() {
+            const keywordsInput = document.getElementById('keywords').value;
+            const keywords = keywordsInput.split(',').map(k => k.trim().toLowerCase());
+            const tables = document.querySelectorAll('#excel-data-container table');
+            const resultDiv = document.getElementById('keyword-results');
+            resultDiv.innerHTML = ''; // 清空先前结果
+            let totalCounts = {};
+
+            keywords.forEach(keyword => {
+                totalCounts[keyword] = 0;
+            });
+
+            tables.forEach(table => {
+                Array.from(table.querySelectorAll('tr')).forEach(row => {
+                    let rowText = row.innerText.toLowerCase();
+                    keywords.forEach(keyword => {
+                        // 检查该行是否包含关键字
+                        if (rowText.includes(keyword)) {
+                            totalCounts[keyword] += 1;
+                        }
+                    });
+                });
+            });
+
+            let resultsText = '统计次数: ';
+            keywords.forEach((keyword, index) => {
+                resultsText += `${keyword} = ${totalCounts[keyword]}`;
+                if (index < keywords.length - 1) resultsText += ', ';
+            });
+            resultDiv.innerText = resultsText;
+        }
+    </script>
+</body>
+</html>
