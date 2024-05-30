@@ -11,7 +11,6 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.poi.excel.ExcelReader;
 import cn.hutool.poi.excel.ExcelUtil;
 import java.io.File;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -35,8 +34,9 @@ public class AssetsCheck {
 
         String auditHostPath = "E:\\cctv-assets\\一线资产与堡垒机防病毒资产\\data\\堡垒机";
         List<Base> ahList = auditHostRead(auditHostPath);
-        //printSysname(ahList);
+        printSysname(ahList);
 
+        int i = 1/0;
         String frontLinePath = "E:\\cctv-assets\\一线资产与堡垒机防病毒资产\\data\\一线资产";
         Map<String, String> fileMap = handleExcelFiles(frontLinePath);
 
@@ -160,9 +160,16 @@ public class AssetsCheck {
         Map<String, String> fileMap = handleExcelFiles(directoryPath);
         List<Base> allList = Lists.newArrayList();
         fileMap.forEach((name, path) -> {
-            ExcelReader reader = ExcelUtil.getReader(path)
-                    .addHeaderAlias("#主机IP", "ip")
-                    .addHeaderAlias("主机组名称", "sysname");
+            ExcelReader reader;
+            if(path.contains("安恒运维审计")){
+                 reader = ExcelUtil.getReader(path)
+                        .addHeaderAlias("#主机IP", "ip")
+                        .addHeaderAlias("主机组名称", "sysname");
+            }else{
+                 reader = ExcelUtil.getReader(path)
+                        .addHeaderAlias("IP地址/域名(必填),多个用“;”拆分", "ip")
+                        .addHeaderAlias("资源组(必填,支持中英文,数字,下划线,中划线,小数点,圆括号,中括号,空格)", "sysname");
+            }
             List<Base> list = restoreData(reader.readAll(Base.class));
             Console.log("name:{} count:{}", name, list.size());
             allList.addAll(list);
