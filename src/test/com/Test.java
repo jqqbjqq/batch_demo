@@ -5,6 +5,7 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.StrUtil;
 import com.cctv.security.YunjingHostQuery;
 import java.awt.SystemTray;
 import java.util.ArrayList;
@@ -22,7 +23,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class Test {
 
     public static void main(String[] args) {
-        TimeInterval timer = DateUtil.timer();
+    /*    TimeInterval timer = DateUtil.timer();
         List<Integer> itemList = new ArrayList<>();
         for (int i = 0; i <= 10000; i++) {
             itemList.add(i);
@@ -44,7 +45,11 @@ public class Test {
             });
         }
         System.out.println(all.size());
-        Console.log("全部处理完成,耗时:{}秒", timer.intervalSecond());
+        Console.log("全部处理完成,耗时:{}秒", timer.intervalSecond());*/
+
+        String str = null;
+        final List<String> split = StrUtil.split(str, "|");
+        split.forEach(System.out::println);
     }
 
 
