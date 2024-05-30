@@ -4,15 +4,18 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.file.FileNameUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.poi.excel.ExcelReader;
 import cn.hutool.poi.excel.ExcelUtil;
 import java.io.File;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 import lombok.Builder;
 import lombok.Data;
@@ -25,50 +28,66 @@ public class AssetsCheck {
 
     public static void main(String[] args) {
         TimeInterval timer = DateUtil.timer();
-        /*
+
         String antiVirusPath = "E:\\cctv-assets\\一线资产与堡垒机防病毒资产\\data\\防病毒";
         List<Base> avList = antiVirusRead(antiVirusPath);
-        printSysname(avList);
+        //printSysname(avList);
 
         String auditHostPath = "E:\\cctv-assets\\一线资产与堡垒机防病毒资产\\data\\堡垒机";
         List<Base> ahList = auditHostRead(auditHostPath);
-        printSysname(ahList);
-        */
+        //printSysname(ahList);
+
         String frontLinePath = "E:\\cctv-assets\\一线资产与堡垒机防病毒资产\\data\\一线资产";
         Map<String, String> fileMap = handleExcelFiles(frontLinePath);
 
         //many task
-        fileMap.entrySet().forEach(file -> { //parallelStream().
-            String fileName = file.getKey(),filePath = file.getValue();
+        fileMap.forEach((fileName, filePath) -> { //fileMap.stream().parallelStream().forEach
+            //Console.log("load filePath:{} ",filePath);
             List<String> sheetNameList = ExcelUtil.getReader(filePath).getSheetNames();
-            CollUtil.removeAny(sheetNameList, "help", "格式");
-            if(StrUtil.contains(filePath,"近期确认的资产")){
+            filterSheetName(sheetNameList);
+            if(sheetNameList.size()==1&&sheetNameList.get(0).startsWith("Sheet")){
                 List<Base> flList = Lists.newArrayList();
-                sheetNameList.forEach(sheetName->{
-                    ExcelReader reader = ExcelUtil.getReader(new File(filePath),sheetName)
-                            .addHeaderAlias("资产IP", "ip")
-                            .addHeaderAlias("资产名称", "sysname");
-                    List<Base> list = reader.readAll(Base.class);
-                    Console.log("filename:{} sheetname:{} count:{}", fileName, sheetName, flList.size());
+                sheetNameList.forEach(sheetName -> {
+                    ExcelReader reader = ExcelUtil.getReader(new File(filePath), sheetName)
+                            .addHeaderAlias("内网IP地址/云内地址", "ip")
+                            .addHeaderAlias("信息系统名称", "sysname");
+                    List<Base> list = restoreData(reader.readAll(Base.class));
+                    //Console.log("  -> sheetname:{} count:{}", sheetName, flList.size());
                     flList.addAll(list);
                 });
-                flList.forEach(e->{
-                    e.setSysname(fileName);
+                Map<String, List<Base>> groupList = flList.stream().collect(Collectors.groupingBy(
+                        Base::getSysname, Collectors.toList()));
+                groupList.forEach((sysname,list)-> {
+                    //dataHandler(flList, avList, ahList);
+                    printSysname(list);
                 });
-                //printSysname(flList);
+                return;
+            }
+            if (StrUtil.contains(filePath, "近期确认的资产")) {
+                List<Base> flList = Lists.newArrayList();
+                sheetNameList.forEach(sheetName -> {
+                    ExcelReader reader = ExcelUtil.getReader(new File(filePath), sheetName)
+                            .addHeaderAlias("资产IP", "ip")
+                            .addHeaderAlias("资产名称", "sysname");
+                    List<Base> list = restoreData(reader.readAll(Base.class));
+                    //Console.log("  -> sheetname:{} count:{}", sheetName, flList.size());
+                    flList.addAll(list);
+                });
+                flList.forEach(e -> {
+                    e.setSysname(FileNameUtil.getPrefix(fileName));
+                });
+                printSysname(flList);
                 //dataHandler(flList, avList, ahList);
-            }else{
-                sheetNameList.forEach(sheetName->{
-                    ExcelReader reader = ExcelUtil.getReader(new File(filePath),sheetName)
+            } else {
+                sheetNameList.forEach(sheetName -> {
+                    ExcelReader reader = ExcelUtil.getReader(new File(filePath), sheetName)
                             .addHeaderAlias("资产IP", "ip")
                             .addHeaderAlias("资产名称", "sysname")
                             .addHeaderAlias("安全域", "realm");
-                    List<Base> flList = reader.readAll(Base.class);
-                    Console.log("filename:{} sheetname:{} count:{}", fileName, sheetName, flList.size());
-                    flList.forEach(e->{
-                        e.setSysname(e.getRealm().split("-")[0]);
-                    });
-                    //printSysname(flList);
+                    List<Base> flList = restoreData(reader.readAll(Base.class));
+                    //Console.log("  -> sheetname:{} count:{}", sheetName, flList.size());
+                    cleanupName(flList);
+                    printSysname(flList);
                     //dataHandler(flList, avList, ahList);
                 });
             }
@@ -76,9 +95,46 @@ public class AssetsCheck {
         Console.log("The total time is {}s", timer.intervalSecond());
     }
 
+    private static List<Base> restoreData(List<Base> flList) {
+        if(CollUtil.isEmpty(flList)){
+            return Lists.newArrayList();
+        }
+        return flList.stream().filter(e -> StrUtil.isNotBlank(e.getIp())) //&&StrUtil.isNotBlank(e.getSysname())
+                .peek(e -> {
+                    e.setIp(e.getIp().trim());
+                    if (StrUtil.isNotBlank(e.getSysname())) {
+                        e.setSysname(e.getSysname().trim());
+                    }
+                }).collect(Collectors.toList());
+    }
+
+    private static void cleanupName(List<Base> flList) {
+        if(CollUtil.isEmpty(flList)){
+            return;
+        }
+        flList.forEach(e -> {
+            e.setSysname(getSysname(flList.get(0).getRealm()));
+        });
+    }
+
+    private static String getSysname(String str) {
+        if(StrUtil.isBlank(str)){
+            return "";
+        }
+        if(str.startsWith("/")){
+            return str.split("/")[3];
+        }
+        return str.split("-")[0];
+    }
+
+    private static void filterSheetName(List<String> list) {
+        CollUtil.removeAny(list, "help", "格式");
+        list.removeIf(str -> str.startsWith("Sht"));
+    }
+
     private static void printSysname(List<Base> list){
-        Console.log("------------{}------------",list.get(0).getClass().getName());
-        Set<String> set = list.stream().map(Base::getSysname).filter(StrUtil::isNotBlank).collect(Collectors.toSet());
+        //Console.log("------------{}------------",list.get(0).getClass().getName());
+        Set<String> set = list.stream().map(Base::getSysname).filter(StrUtil::isNotBlank).collect(Collectors.toCollection(TreeSet::new));
         set.forEach(System.out::println);
     }
 
@@ -93,7 +149,7 @@ public class AssetsCheck {
             ExcelReader reader = ExcelUtil.getReader(path)
                     .addHeaderAlias("名称", "ip")
                     .addHeaderAlias("信息系统", "sysname");
-            List<Base> list = reader.readAll(Base.class);
+            List<Base> list = restoreData(reader.readAll(Base.class));
             Console.log("name:{} count:{}", name, list.size());
             allList.addAll(list);
         });
@@ -107,7 +163,7 @@ public class AssetsCheck {
             ExcelReader reader = ExcelUtil.getReader(path)
                     .addHeaderAlias("#主机IP", "ip")
                     .addHeaderAlias("主机组名称", "sysname");
-            List<Base> list = reader.readAll(Base.class);
+            List<Base> list = restoreData(reader.readAll(Base.class));
             Console.log("name:{} count:{}", name, list.size());
             allList.addAll(list);
         });
