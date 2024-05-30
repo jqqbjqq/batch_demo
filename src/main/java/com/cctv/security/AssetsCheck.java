@@ -84,7 +84,7 @@ public class AssetsCheck {
                             .addHeaderAlias("安全域", "realm");
                     List<Assets> flList = restoreData(reader.readAll(Assets.class));
                     Console.log("  -> sheetname:{} count:{}", sheetName, flList.size());
-                    cleanupName(flList);
+                    //cleanupName(flList);
                     dataHandler(flList, avMap, ahMap);
                 });
             }
@@ -97,34 +97,24 @@ public class AssetsCheck {
     }
 
 
-    private static List<Assets> restoreData(List<Assets> flList) {
-        if(CollUtil.isEmpty(flList)){
+    private static List<Assets> restoreData(List<Assets> list) {
+        if(CollUtil.isEmpty(list)){
             return Lists.newArrayList();
         }
-        return flList.stream().filter(e -> StrUtil.isNotBlank(e.getIp())) //&&StrUtil.isNotBlank(e.getSysname())
+        return list.stream().filter(e -> StrUtil.isNotBlank(e.getIp())) //&&StrUtil.isNotBlank(e.getSysname())
                 .peek(e -> {
                     e.setIp(e.getIp().trim());
-                    if (StrUtil.isNotBlank(e.getSysname())) {
-                        e.setSysname(e.getSysname().trim());
+                    if (StrUtil.isNotBlank(e.getRealm())) {
+                        e.setSysname(splitName(e.getRealm()));
                     }
+                    if (StrUtil.isBlank(e.getSysname())) {
+                        e.setSysname(list.get(0).getSysname());
+                    }
+                    e.setSysname(e.getSysname().trim());
                 }).collect(Collectors.toList());
     }
 
-    private static Map<String, List<Assets>> toMapBySysname(List<Assets> list) {
-        return list.stream().collect(Collectors.groupingBy(
-                Assets::getSysname, Collectors.toList()));
-    }
-
-    private static void cleanupName(List<Assets> flList) {
-        if(CollUtil.isEmpty(flList)){
-            return;
-        }
-        flList.forEach(e -> {
-            e.setSysname(getSysname(flList.get(0).getRealm()));
-        });
-    }
-
-    private static String getSysname(String str) {
+    private static String splitName(String str) {
         if(StrUtil.isBlank(str)){
             return "";
         }
@@ -132,6 +122,11 @@ public class AssetsCheck {
             return str.split("/")[3];
         }
         return str.split("-")[0];
+    }
+
+    private static Map<String, List<Assets>> toMapBySysname(List<Assets> list) {
+        return list.stream().collect(Collectors.groupingBy(
+                Assets::getSysname, Collectors.toList()));
     }
 
     private static void filterSheetName(List<String> list) {

@@ -47,9 +47,11 @@ public class Test {
         System.out.println(all.size());
         Console.log("全部处理完成,耗时:{}秒", timer.intervalSecond());*/
 
-        String str = null;
-        final List<String> split = StrUtil.split(str, "|");
-        split.forEach(System.out::println);
+
+
+        String str = "/中央广播电视总台/光华路办公区/云数据中心运行部/综合信息门户";
+        System.out.println(str.split("/")[3]);
+
     }
 
 

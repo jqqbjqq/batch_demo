@@ -10,6 +10,7 @@ import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.poi.excel.ExcelReader;
 import cn.hutool.poi.excel.ExcelUtil;
+import com.cctv.security.AssetsCheck;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
@@ -30,12 +31,12 @@ public class AssetsFileName {
 
         // Console.log("---------AntiVirus----------");
         // String antiVirusPath = "E:\\cctv-assets\\一线资产与堡垒机防病毒资产\\data\\防病毒";
-        // List<Base> avList = antiVirusRead(antiVirusPath);
+        // List<Assets> avList = antiVirusRead(antiVirusPath);
         // printSysname(avList);
         //
         // Console.log("---------AuditHost----------");
         // String auditHostPath = "E:\\cctv-assets\\一线资产与堡垒机防病毒资产\\data\\堡垒机";
-        // List<Base> ahList = auditHostRead(auditHostPath);
+        // List<Assets> ahList = auditHostRead(auditHostPath);
         // printSysname(ahList);
 
         Console.log("---------FrontLine----------");
@@ -48,17 +49,17 @@ public class AssetsFileName {
             List<String> sheetNameList = ExcelUtil.getReader(filePath).getSheetNames();
             filterSheetName(sheetNameList);
             if(sheetNameList.size()==1&&sheetNameList.get(0).startsWith("Sheet")){
-                List<Base> flList = Lists.newArrayList();
+                List<Assets> flList = Lists.newArrayList();
                 sheetNameList.forEach(sheetName -> {
                     ExcelReader reader = ExcelUtil.getReader(new File(filePath), sheetName)
                             .addHeaderAlias("内网IP地址/云内地址", "ip")
                             .addHeaderAlias("信息系统名称", "sysname");
-                    List<Base> list = restoreData(reader.readAll(Base.class));
+                    List<Assets> list = restoreData(reader.readAll(Assets.class));
                     //Console.log("  -> sheetname:{} count:{}", sheetName, flList.size());
                     flList.addAll(list);
                 });
-                Map<String, List<Base>> groupList = flList.stream().collect(Collectors.groupingBy(
-                        Base::getSysname, Collectors.toList()));
+                Map<String, List<Assets>> groupList = flList.stream().collect(Collectors.groupingBy(
+                        Assets::getSysname, Collectors.toList()));
                 groupList.forEach((sysname,list)-> {
                     //dataHandler(flList, avList, ahList);
                     printSysname(list);
@@ -66,12 +67,12 @@ public class AssetsFileName {
                 return;
             }
             if (StrUtil.contains(filePath, "近期确认的资产")) {
-                List<Base> flList = Lists.newArrayList();
+                List<Assets> flList = Lists.newArrayList();
                 sheetNameList.forEach(sheetName -> {
                     ExcelReader reader = ExcelUtil.getReader(new File(filePath), sheetName)
                             .addHeaderAlias("资产IP", "ip")
                             .addHeaderAlias("资产名称", "sysname");
-                    List<Base> list = restoreData(reader.readAll(Base.class));
+                    List<Assets> list = restoreData(reader.readAll(Assets.class));
                     //Console.log("  -> sheetname:{} count:{}", sheetName, flList.size());
                     flList.addAll(list);
                 });
@@ -86,9 +87,8 @@ public class AssetsFileName {
                             .addHeaderAlias("资产IP", "ip")
                             .addHeaderAlias("资产名称", "sysname")
                             .addHeaderAlias("安全域", "realm");
-                    List<Base> flList = restoreData(reader.readAll(Base.class));
+                    List<Assets> flList = restoreData(reader.readAll(Assets.class));
                     //Console.log("  -> sheetname:{} count:{}", sheetName, flList.size());
-                    cleanupName(flList);
                     printSysname(flList);
                 });
             }
@@ -97,41 +97,35 @@ public class AssetsFileName {
     }
 
 
-    private static void printSysname(List<Base> list){
+    private static void printSysname(List<Assets> list){
         //Console.log("------------{}------------",list.get(0).getClass().getName());
-        Set<String> set = list.stream().map(Base::getSysname).filter(StrUtil::isNotBlank).collect(Collectors.toCollection(TreeSet::new));
+        Set<String> set = list.stream().map(Assets::getSysname).filter(StrUtil::isNotBlank).collect(Collectors.toCollection(TreeSet::new));
         set.forEach(System.out::println);
     }
 
-    private static List<Base> restoreData(List<Base> flList) {
-        if(CollUtil.isEmpty(flList)){
+    private static List<Assets> restoreData(List<Assets> list) {
+        if(CollUtil.isEmpty(list)){
             return Lists.newArrayList();
         }
-        return flList.stream().filter(e -> StrUtil.isNotBlank(e.getIp())) //&&StrUtil.isNotBlank(e.getSysname())
+        return list.stream().filter(e -> StrUtil.isNotBlank(e.getIp())) //&&StrUtil.isNotBlank(e.getSysname())
                 .peek(e -> {
                     e.setIp(e.getIp().trim());
-                    if (StrUtil.isNotBlank(e.getSysname())) {
-                        e.setSysname(e.getSysname().trim());
+                    if (StrUtil.isNotBlank(e.getRealm())) {
+                        e.setSysname(splitName(e.getRealm()));
                     }
+                    if (StrUtil.isBlank(e.getSysname())) {
+                        e.setSysname(list.get(0).getSysname());
+                    }
+                    e.setSysname(e.getSysname().trim());
                 }).collect(Collectors.toList());
     }
 
-    private static void cleanupName(List<Base> flList) {
-        if(CollUtil.isEmpty(flList)){
-            return;
-        }
-        flList.forEach(e -> {
-            //e.setSysname(getSysname(flList.get(0).getRealm()));
-            e.setSysname(flList.get(0).getRealm());
-        });
-    }
-
-    private static String getSysname(String str) {
+    private static String splitName(String str) {
         if(StrUtil.isBlank(str)){
             return "";
         }
         if(str.startsWith("/")){
-            return str.split("/")[3];
+            return str.split("/")[4];
         }
         return str.split("-")[0];
     }
@@ -141,23 +135,23 @@ public class AssetsFileName {
         list.removeIf(str -> str.startsWith("Sht"));
     }
 
-    private static List<Base> antiVirusRead(String directoryPath) {
+    private static List<Assets> antiVirusRead(String directoryPath) {
         Map<String, String> fileMap = handleExcelFiles(directoryPath);
-        List<Base> allList = Lists.newArrayList();
+        List<Assets> allList = Lists.newArrayList();
         fileMap.forEach((name, path) -> {
             ExcelReader reader = ExcelUtil.getReader(path)
                     .addHeaderAlias("名称", "ip")
                     .addHeaderAlias("信息系统", "sysname");
-            List<Base> list = restoreData(reader.readAll(Base.class));
+            List<Assets> list = restoreData(reader.readAll(Assets.class));
             Console.log("name:{} count:{}", name, list.size());
             allList.addAll(list);
         });
         return allList;
     }
 
-    private static List<Base> auditHostRead(String directoryPath) {
+    private static List<Assets> auditHostRead(String directoryPath) {
         Map<String, String> fileMap = handleExcelFiles(directoryPath);
-        List<Base> allList = Lists.newArrayList();
+        List<Assets> allList = Lists.newArrayList();
         fileMap.forEach((name, path) -> {
             ExcelReader reader;
             if(path.contains("安恒运维审计")){
@@ -169,7 +163,7 @@ public class AssetsFileName {
                         .addHeaderAlias("IP地址/域名(必填),多个用“;”拆分", "ip")
                         .addHeaderAlias("资源组(必填,支持中英文,数字,下划线,中划线,小数点,圆括号,中括号,空格)", "sysname");
             }
-            List<Base> list = restoreData(reader.readAll(Base.class));
+            List<Assets> list = restoreData(reader.readAll(Assets.class));
             //Console.log("name:{} count:{}", name, list.size());
             allList.addAll(list);
         });
@@ -199,7 +193,7 @@ public class AssetsFileName {
 
     @Data
     @Builder
-    static class Base{
+    static class Assets{
         String ip; //IP
         String sysname; //资产名称
         private String realm; //安全域
