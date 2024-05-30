@@ -3,35 +3,71 @@ package com;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.lang.Console;
+import cn.hutool.poi.excel.ExcelReader;
 import cn.hutool.poi.excel.ExcelUtil;
 import cn.hutool.poi.excel.ExcelWriter;
-import cn.hutool.poi.excel.StyleSet;
-import cn.hutool.poi.excel.style.StyleUtil;
+import com.sun.media.jfxmedia.logging.Logger;
 import java.io.File;
 import java.util.List;
 import lombok.Builder;
 import lombok.Data;
 import org.apache.commons.compress.utils.Lists;
 import org.apache.poi.ss.usermodel.BorderStyle;
+import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.HorizontalAlignment;
 import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.VerticalAlignment;
-
 
 public class ExcelTest {
 
     public static void main(String[] args) {
-        File file = new File("D:\\IdeaProjects\\batch_demo\\host.xlsx");
-        FileUtil.del(file);
-        List<Item> list  = Lists.newArrayList();
-        list.add(Item.builder().key("aaaaa").value("bbbbb").build());
-        list.add(Item.builder().key("ccccc").value("ddddd").build());
-        list.add(Item.builder().key("eeeee").value("fffff").build());
-        writeExcel(file,"xxx",list);
+        //File file = new File("D:\\IdeaProjects\\batch_demo\\host.xlsx");
+        // FileUtil.del(file);
+        // List<Item> list  = Lists.newArrayList();
+        // list.add(Item.builder().key("aaaaa").value("bbbbb").build());
+        // list.add(Item.builder().key("ccccc").value("ddddd").build());
+        // list.add(Item.builder().key("eeeee").value("fffff").build());
+        writeExcel2();
     }
 
+    private static void writeExcel2() {
+        ExcelReader reader = ExcelUtil.getReader("D:\\IdeaProjects\\batch_demo\\host.xlsx")
+                .addHeaderAlias("外网IP", "queryIp");
+        final List<List<Object>> read = reader.read();
+        List<Obj> objList = Lists.newArrayList();
+        for (int i = 0; i < read.size(); i++) {
+            for (int j = 0; j < read.get(i).size(); j++) {
+                String cell = String.valueOf(read.get(i).get(j));
+                if(cell.endsWith("_")){
+                    //Console.log("[{}:{}:{}]",i,j,cell);
+                    objList.add(Obj.builder().x(i).y(j).v(cell).build());
+                }
+            }
+        }
+
+        ExcelWriter writer = ExcelUtil.getWriter("D:\\IdeaProjects\\batch_demo\\host_color.xlsx");
+        //----------------------
+        // 设置第二行第二列的背景色为红色
+        CellStyle cellStyle = writer.getStyleSet()
+                .setBorder(BorderStyle.NONE, IndexedColors.AUTOMATIC)
+                .setAlign(HorizontalAlignment.LEFT, VerticalAlignment.CENTER)
+                .getCellStyle();
+        cellStyle.setFillForegroundColor(IndexedColors.BLUE.getIndex());
+        cellStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        objList.forEach(e->{
+            Console.log("[{}:{}:{}]",e.getX(), e.getY(),e.getV());
+            writer.writeCellValue(e.getY(),e.getX(), e.getV());
+            writer.getOrCreateCell(e.getY(),e.getX()).setCellStyle(cellStyle);
+        });
+        // 关闭writer，释放内存
+        writer.flush();
+        writer.close();
+
+    }
 
     private static void writeExcel(File file,String sheetName, List<Item> itemList) {
         if(CollectionUtil.isEmpty(itemList)){
@@ -42,11 +78,9 @@ public class ExcelTest {
                 .addHeaderAlias("key", "资产名")
                 .addHeaderAlias("value", "资产数量");
 
-
         //writer.setOnlyAlias(true).setSheet(sheetName);
         writer.getStyleSet().setBorder(BorderStyle.NONE, IndexedColors.AUTOMATIC)
                 .setAlign(HorizontalAlignment.LEFT, VerticalAlignment.CENTER);
-
 
         // 一次性写出内容，使用默认样式，强制输出标题
         writer.write(itemList, true);
@@ -58,6 +92,7 @@ public class ExcelTest {
         cellStyle.setFont(font);
         writer.getCell(0, 1).setCellStyle(cellStyle);
         writer.getCell(1, 1).setCellStyle(cellStyle);
+        writer.getCell(1, 1).setCellValue("xx");
         //---------------
 
         // 关闭writer，释放内存
@@ -70,5 +105,13 @@ public class ExcelTest {
     static class Item {
         private String key; //key
         private String value; //value
+    }
+
+    @Data
+    @Builder
+    static class Obj{
+        private int x;
+        private int y;
+        private String v;
     }
 }
