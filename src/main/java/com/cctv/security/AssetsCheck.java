@@ -6,7 +6,6 @@ import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.FileNameUtil;
 import cn.hutool.core.lang.Console;
-import cn.hutool.core.lang.intern.WeakInterner;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.poi.excel.ExcelReader;
@@ -18,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -39,6 +37,7 @@ public class AssetsCheck {
     static Map<String,List<Assets>> avMap;
     static Map<String,List<Assets>> ahMap;
     static Map<String, String> fileMap;
+    static List<Assets> allFlList = Lists.newArrayList();
 
     static {
         String antiVirusPath = "E:\\cctv-assets\\一线资产与堡垒机防病毒资产\\data\\防病毒";
@@ -100,7 +99,6 @@ public class AssetsCheck {
                             .addHeaderAlias("安全域", "realm");
                     List<Assets> flList = restoreData(reader.readAll(Assets.class));
                     Console.log("  -> sheetname:{} count:{}", sheetName, flList.size());
-                    //cleanupName(flList);
                     dataHandler(flList);
                 });
             }
@@ -108,6 +106,7 @@ public class AssetsCheck {
         noMatchHandler();
         Console.log("The total time is {}s", timer.intervalSecond());
     }
+
 
     private static void noMatchHandler() {
         String avFilePath = "E:\\cctv-assets\\一线资产与堡垒机防病毒资产\\data\\gene\\未匹配【防病毒】.xlsx";
@@ -119,6 +118,45 @@ public class AssetsCheck {
         List<Assets> auditHostList = ahMap.values().stream().flatMap(List::stream)
                 .collect(Collectors.toList());
         writeFile(ahFilePath,auditHostList);
+        // ip rematching
+        reMatchSysname(antiVirusList,auditHostList);
+    }
+
+    private static void reMatchSysname(List<Assets> avList,List<Assets> ahList) {
+        Console.log("allFlList count:{}", allFlList.size());
+
+        String avFilePath = "E:\\cctv-assets\\一线资产与堡垒机防病毒资产\\data\\gene\\IP匹配【防病毒】.xlsx";
+        writeFile2(avFilePath,toAssets2(avList));
+
+        String ahFilePath = "E:\\cctv-assets\\一线资产与堡垒机防病毒资产\\data\\gene\\IP匹配【堡垒机】.xlsx";
+        writeFile2(ahFilePath,toAssets2(ahList));
+    }
+
+    private static List<Assets2> toAssets2(List<Assets> assetsList) {
+        List<Assets2> assets2List = Lists.newArrayList();
+        for (Assets assets : assetsList) {
+            for (Assets fl : allFlList) {
+                if (assets.getIp().equals(fl.getIp())) {
+                    assets2List.add(Assets2.builder().sysname1(fl.getSysname()).sysname2(assets.getSysname()).ip(fl.getIp()).build());
+                }
+            }
+        }
+        return assets2List;
+    }
+
+    private static void writeFile2(String filePath,List<Assets2> list) {
+        File file = new File(filePath);
+        FileUtil.del(file);
+        ExcelWriter writer = ExcelUtil.getWriter(file)
+                .addHeaderAlias("sysname1", "一线系统")
+                .addHeaderAlias("sysname2", "系统")
+                .addHeaderAlias("ip", "IP");
+        writer.setOnlyAlias(true);
+        writer.setColumnWidth(0,30).setColumnWidth(1,20);
+        writer.getStyleSet().setBorder(BorderStyle.NONE, IndexedColors.AUTOMATIC)
+                .setAlign(HorizontalAlignment.LEFT, VerticalAlignment.CENTER);
+        writer.write(list, true);
+        writer.close();
     }
 
     private static void dataHandler(List<Assets> flList) {
@@ -145,6 +183,7 @@ public class AssetsCheck {
         }
         String filePath = "E:\\cctv-assets\\一线资产与堡垒机防病毒资产\\data\\gene\\"+sysname+".xlsx";
         writeFile(filePath,flList);
+        allFlList.addAll(flList);
     }
 
     private static void writeFile(String filePath,List<Assets> list) {
@@ -154,7 +193,7 @@ public class AssetsCheck {
                 .addHeaderAlias("sysname", "系统名")
                 .addHeaderAlias("ip", "IP");
         writer.setOnlyAlias(true);
-        writer.setColumnWidth(1,100).setColumnWidth(2,100);
+        writer.setColumnWidth(0,30).setColumnWidth(1,20);
         writer.getStyleSet().setBorder(BorderStyle.NONE, IndexedColors.AUTOMATIC)
                 .setAlign(HorizontalAlignment.LEFT, VerticalAlignment.CENTER);
         writer.write(list, true);
@@ -289,6 +328,14 @@ public class AssetsCheck {
         private String ip; //IP
         private String sysname; //资产名称
         private String realm; //安全域
+    }
+
+    @Data
+    @Builder
+    static class Assets2{
+        private String ip;
+        private String sysname1;
+        private String sysname2;
     }
 
     @Data
