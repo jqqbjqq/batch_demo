@@ -48,8 +48,9 @@ public class ExcelTest {
                 }
             }
         }
+        reader.close();
 
-        ExcelWriter writer = ExcelUtil.getWriter("D:\\IdeaProjects\\batch_demo\\host_color.xlsx");
+        ExcelWriter writer = ExcelUtil.getWriter("D:\\IdeaProjects\\batch_demo\\host.xlsx");
         //----------------------
         // 设置第二行第二列的背景色为红色
         CellStyle cellStyle = writer.getStyleSet()

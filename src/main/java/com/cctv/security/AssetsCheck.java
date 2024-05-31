@@ -6,39 +6,56 @@ import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.FileNameUtil;
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.lang.intern.WeakInterner;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.poi.excel.ExcelReader;
 import cn.hutool.poi.excel.ExcelUtil;
+import cn.hutool.poi.excel.ExcelWriter;
 import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.Builder;
 import lombok.Data;
 import org.apache.commons.compress.utils.Lists;
+import org.apache.poi.ss.usermodel.BorderStyle;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.VerticalAlignment;
 
 /**
  * @author jiqq
  */
 public class AssetsCheck {
 
-    public static void main(String[] args) {
-        TimeInterval timer = DateUtil.timer();
+    static Map<String, SysMapping>  sysMappingMap ;
+    static Map<String,List<Assets>> avMap;
+    static Map<String,List<Assets>> ahMap;
+    static Map<String, String> fileMap;
 
-        String sysMappingPath = "E:\\cctv-assets\\一线资产与堡垒机防病毒资产\\data\\系统名整理.xlsx";
-        Map<String, SysMapping> sysMappingMap = sysMappingRead(sysMappingPath);
-
+    static {
         String antiVirusPath = "E:\\cctv-assets\\一线资产与堡垒机防病毒资产\\data\\防病毒";
-        Map<String,List<Assets>> avMap = toMapBySysname(antiVirusRead(antiVirusPath));
+        avMap = toMapBySysname(antiVirusRead(antiVirusPath));
 
         String auditHostPath = "E:\\cctv-assets\\一线资产与堡垒机防病毒资产\\data\\堡垒机";
-        Map<String,List<Assets>> ahMap = toMapBySysname(auditHostRead(auditHostPath));
+        ahMap = toMapBySysname(auditHostRead(auditHostPath));
 
         String frontLinePath = "E:\\cctv-assets\\一线资产与堡垒机防病毒资产\\data\\一线资产";
-        Map<String, String> fileMap = handleExcelFiles(frontLinePath);
+        fileMap = handleExcelFiles(frontLinePath);
 
+        String sysMappingPath = "E:\\cctv-assets\\一线资产与堡垒机防病毒资产\\data\\系统名整理.xlsx";
+        sysMappingMap = sysMappingRead(sysMappingPath);
+    }
+
+    public static void main(String[] args) {
+        TimeInterval timer = DateUtil.timer();
         //many task
         fileMap.forEach((fileName, filePath) -> { //fileMap.stream().parallelStream().forEach
             Console.log("load filePath:{} ",filePath);
@@ -57,7 +74,7 @@ public class AssetsCheck {
                 Map<String, List<Assets>> groupList = flList.stream().collect(Collectors.groupingBy(
                         Assets::getSysname, Collectors.toList()));
                 groupList.forEach((sysname,list)-> {
-                    dataHandler(flList, avMap, ahMap);
+                    dataHandler(flList);
                 });
                 return;
             }
@@ -74,7 +91,7 @@ public class AssetsCheck {
                 flList.forEach(e -> {
                     e.setSysname(FileNameUtil.getPrefix(fileName));
                 });
-                dataHandler(flList, avMap, ahMap);
+                dataHandler(flList);
             } else {
                 sheetNameList.forEach(sheetName -> {
                     ExcelReader reader = ExcelUtil.getReader(new File(filePath), sheetName)
@@ -84,17 +101,65 @@ public class AssetsCheck {
                     List<Assets> flList = restoreData(reader.readAll(Assets.class));
                     Console.log("  -> sheetname:{} count:{}", sheetName, flList.size());
                     //cleanupName(flList);
-                    dataHandler(flList, avMap, ahMap);
+                    dataHandler(flList);
                 });
             }
         });
+        noMatchHandler();
         Console.log("The total time is {}s", timer.intervalSecond());
     }
 
-    private static void dataHandler(List<Assets> flList, Map<String,List<Assets>> avMap, Map<String,List<Assets>> ahMap) {
-        Console.log("flList:{},avList:{},ahList:{}", flList.size(),avMap.size(),ahMap.size());
+    private static void noMatchHandler() {
+        String avFilePath = "E:\\cctv-assets\\一线资产与堡垒机防病毒资产\\data\\gene\\未匹配【防病毒】.xlsx";
+        List<Assets> antiVirusList = avMap.values().stream().flatMap(List::stream)
+                .collect(Collectors.toList());
+        writeFile(avFilePath,antiVirusList);
+
+        String ahFilePath = "E:\\cctv-assets\\一线资产与堡垒机防病毒资产\\data\\gene\\未匹配【堡垒机】.xlsx";
+        List<Assets> auditHostList = ahMap.values().stream().flatMap(List::stream)
+                .collect(Collectors.toList());
+        writeFile(ahFilePath,auditHostList);
     }
 
+    private static void dataHandler(List<Assets> flList) {
+        Console.log("flList:{},avList:{},ahList:{}", flList.size(),avMap.size(),ahMap.size());
+        String sysname = flList.get(0).getSysname();
+        SysMapping mapping = sysMappingMap.get(sysname);
+        if(Objects.isNull(mapping)){
+            Console.log("The sysname mapping is null", sysname);
+            return;
+        }
+        String[] antiVirusArr = mapping.getAntiVirusArr();
+        String[] auditHostArr = mapping.getAuditHostArr();
+
+        flList.add(0,Assets.builder().sysname("【一线系统】").build());
+        flList.add(Assets.builder().sysname("【防病毒系统】").build());
+        for (String antiVirus : antiVirusArr) {
+            flList.addAll(Optional.ofNullable(avMap.get(antiVirus)).orElse(Lists.newArrayList()));
+            avMap.remove(antiVirus);
+        }
+        flList.add(Assets.builder().sysname("【堡垒机系统】").build());
+        for (String auditHost : auditHostArr) {
+            flList.addAll(Optional.ofNullable(ahMap.get(auditHost)).orElse(Lists.newArrayList()));
+            ahMap.remove(auditHost);
+        }
+        String filePath = "E:\\cctv-assets\\一线资产与堡垒机防病毒资产\\data\\gene\\"+sysname+".xlsx";
+        writeFile(filePath,flList);
+    }
+
+    private static void writeFile(String filePath,List<Assets> list) {
+        File file = new File(filePath);
+        FileUtil.del(file);
+        ExcelWriter writer = ExcelUtil.getWriter(file)
+                .addHeaderAlias("sysname", "系统名")
+                .addHeaderAlias("ip", "IP");
+        writer.setOnlyAlias(true);
+        writer.setColumnWidth(1,100).setColumnWidth(2,100);
+        writer.getStyleSet().setBorder(BorderStyle.NONE, IndexedColors.AUTOMATIC)
+                .setAlign(HorizontalAlignment.LEFT, VerticalAlignment.CENTER);
+        writer.write(list, true);
+        writer.close();
+    }
 
     private static List<Assets> restoreData(List<Assets> list) {
         if(CollUtil.isEmpty(list)){
@@ -102,9 +167,9 @@ public class AssetsCheck {
         }
         return list.stream().filter(e -> StrUtil.isNotBlank(e.getIp())) //&&StrUtil.isNotBlank(e.getSysname())
                 .peek(e -> {
-                    e.setIp(e.getIp().trim());
+                    e.setIp(extractIP(e.getIp().trim()));
                     if (StrUtil.isNotBlank(e.getRealm())) {
-                        e.setSysname(splitName(e.getRealm()));
+                        e.setSysname(extractName(e.getRealm()));
                     }
                     if (StrUtil.isBlank(e.getSysname())) {
                         e.setSysname(list.get(0).getSysname());
@@ -113,7 +178,16 @@ public class AssetsCheck {
                 }).collect(Collectors.toList());
     }
 
-    private static String splitName(String str) {
+    public static String extractIP(String str) {
+        Pattern pattern = Pattern.compile("\\b(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\b");
+        Matcher matcher = pattern.matcher(str);
+        if (matcher.find()) {
+            return matcher.group();
+        }
+        return null;
+    }
+
+    private static String extractName(String str) {
         if(StrUtil.isBlank(str)){
             return "";
         }
@@ -172,8 +246,8 @@ public class AssetsCheck {
     private static Map<String, SysMapping> sysMappingRead(String filePath) {
         ExcelReader reader = ExcelUtil.getReader(filePath)
                     .addHeaderAlias("一线系统", "frontLine")
-                    .addHeaderAlias("防病毒系统", "antiVirus")
-                    .addHeaderAlias("堡垒机系统", "auditHost");
+                    .addHeaderAlias("防病毒", "antiVirus")
+                    .addHeaderAlias("堡垒机", "auditHost");
         List<SysMapping> list = reader.readAll(SysMapping.class);
         Console.log("filePath:{} count:{}", filePath, list.size());
         Map<String, SysMapping> map = new HashMap<>();
