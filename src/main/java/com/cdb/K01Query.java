@@ -47,7 +47,7 @@ public class K01Query {
         static final String IP7 = "10.42.255.90";
     }
 
-    public static void main(String[] args) {
+    public static void main() {
         settingParam();
         Scanner scanner = new Scanner(System.in);
         Console.log("请输入从当前日期往前查询几天(默认"+beforeDay+"天):");

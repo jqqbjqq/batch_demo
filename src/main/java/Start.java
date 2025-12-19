@@ -1,16 +1,8 @@
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.ArrayUtil;
-import com.cctv.security.AlarmRuleQuery;
-import com.cctv.security.IpWarnQuery;
-import com.cctv.security.VideoWarn;
-import com.cctv.security.WarnFileMerge;
-import com.cctv.security.YunjingHostQuery;
+import com.cdb.K01Query;
 
-/**
- * @author jiqq
- * @date 2024/4/11
- * @description
- */
+
 public class Start {
 
     public static void main(String[] args) {
@@ -19,20 +11,8 @@ public class Start {
             return;
         }
         switch (args[0]) {
-            case "WarnFileMerge":
-                WarnFileMerge.main(args[1]);
-                break;
-            case "VideoWarn":
-                VideoWarn.main(args[1]);
-                break;
-            case "IpWarnQuery":
-                IpWarnQuery.main(args[1],args[2],args[3]);
-                break;
-            case "AlarmRuleQuery":
-                AlarmRuleQuery.main(args[1], args[2], args[3]);
-                break;
-            case "YunjingHostQuery":
-                YunjingHostQuery.main(args[1], args[2],args[3]);
+            case "K01Query":
+                K01Query.main();
                 break;
             default:
                 Console.log("启动参数错误");

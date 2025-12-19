@@ -5,7 +5,7 @@
   <artifactId>batch_demo</artifactId>
   <version>1.0-SNAPSHOT</version>
   <build>
-    <finalName>warn-handler</finalName>
+    <finalName>cdb-handler</finalName>
     <plugins>
       <plugin>
         <artifactId>maven-shade-plugin</artifactId>
@@ -28,25 +28,6 @@
       </plugin>
     </plugins>
   </build>
-  <repositories>
-    <repository>
-      <releases />
-      <id>public</id>
-      <name>aliyun nexus</name>
-      <url>http://maven.aliyun.com/nexus/content/groups/public/</url>
-    </repository>
-  </repositories>
-  <pluginRepositories>
-    <pluginRepository>
-      <releases />
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-      <id>public</id>
-      <name>aliyun nexus</name>
-      <url>http://maven.aliyun.com/nexus/content/groups/public/</url>
-    </pluginRepository>
-  </pluginRepositories>
   <properties>
     <maven.compiler.source>8</maven.compiler.source>
     <maven.compiler.target>8</maven.compiler.target>
