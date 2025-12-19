@@ -5,6 +5,7 @@ import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.ContentType;
@@ -47,64 +48,68 @@ public class K01Query {
     }
 
     public static void main() {
-        settingParam();
-        Scanner scanner = new Scanner(System.in);
-        Console.log("日期"+endDate+"往前查询几天(默认"+beforeDay+"天)，请输入1~100数字:");
-        String input1  = scanner.nextLine();
-        if(NumberUtil.isInteger(input1)){
-            beforeDay = Integer.parseInt(input1);
-            if(beforeDay>100){
-                Console.error("请输入1~100数字");
-                return;
-            }
-        }
-        startDate = getBeforeDate(endDate, --beforeDay);
-        String jsonStr = FileUtil.readUtf8String(ABSOLUTE_PATH+ "ip_token.json");
-        List<IpCookie> ipCookieList = JSONUtil.toList(jsonStr, IpCookie.class);
-        for (IpCookie ipCookie : ipCookieList) {
-            System.out.println("url：" + ipCookie.getUrl());
-        }
-        List<String> dateListBetween = getDateListBetween(startDate, endDate);
-        List<IpTotal> ipTotalList = new ArrayList<>();
-        for (String time : dateListBetween) {
-            IpTotal ipTotal = new IpTotal();
-            String endTime = time+StrUtil.SPACE+hourTime;
-            String startTime = DateUtil.format(DateUtil.offsetHour(DateUtil.parse(endTime),beforeHour), "YYYY-MM-dd HH:mm");
-            ipTotal.setDate(startTime+"~"+endTime);
-            for (IpCookie ipCookie : ipCookieList) {
-                Long  total = 100001L;//transform(ipCookie,startTime,endTime);
-                if(StrUtil.contains (ipCookie.getUrl(),IP.IP1)) {
-                    ipTotal.setIp1Total(total);
-                }else if(StrUtil.contains (ipCookie.getUrl(),IP.IP2)){
-                    ipTotal.setIp2Total(total);
-                }else if(StrUtil.contains (ipCookie.getUrl(),IP.IP3)){
-                    ipTotal.setIp3Total(total);
-                }else if(StrUtil.contains (ipCookie.getUrl(),IP.IP4)){
-                    ipTotal.setIp4Total(total);
-                }else if(StrUtil.contains (ipCookie.getUrl(),IP.IP5)){
-                    ipTotal.setIp5Total(total);
-                }else if(StrUtil.contains (ipCookie.getUrl(),IP.IP6)){
-                    ipTotal.setIp6Total(total);
+        try {
+            settingParam();
+            Scanner scanner = new Scanner(System.in);
+            Console.log("日期" + endDate + "往前查询几天(默认" + beforeDay + "天)，请输入1~100数字:");
+            String input1 = scanner.nextLine();
+            if (NumberUtil.isInteger(input1)) {
+                beforeDay = Integer.parseInt(input1);
+                if (beforeDay > 100 || beforeDay <= 0) {
+                    Console.error("输入错误，请关闭当前窗口，重新打开窗口!");
+                    return;
                 }
             }
-            ipTotal.setIp7Total(ip7Total);
-            ipTotal.setAllTotal(ipTotal.ip1Total+ipTotal.ip2Total+ipTotal.ip3Total+ipTotal.ip4Total+ipTotal.ip5Total+ipTotal.ip6Total+ip7Total);
-            ipTotalList.add(ipTotal);
-        }
+            startDate = getBeforeDate(endDate, --beforeDay);
+            String jsonStr = FileUtil.readUtf8String(ABSOLUTE_PATH + "ip_token.json");
+            List<IpCookie> ipCookieList = JSONUtil.toList(jsonStr, IpCookie.class);
+            for (IpCookie ipCookie : ipCookieList) {
+                System.out.println("url：" + ipCookie.getUrl());
+            }
+            List<String> dateListBetween = getDateListBetween(startDate, endDate);
+            List<IpTotal> ipTotalList = new ArrayList<>();
+            for (String time : dateListBetween) {
+                IpTotal ipTotal = new IpTotal();
+                String endTime = time + StrUtil.SPACE + hourTime;
+                String startTime = DateUtil.format(DateUtil.offsetHour(DateUtil.parse(endTime), beforeHour), "YYYY-MM-dd HH:mm");
+                ipTotal.setDate(startTime + "~" + endTime);
+                for (IpCookie ipCookie : ipCookieList) {
+                    Long total = 100001L;//transform(ipCookie,startTime,endTime);
+                    if (StrUtil.contains(ipCookie.getUrl(), IP.IP1)) {
+                        ipTotal.setIp1Total(total);
+                    } else if (StrUtil.contains(ipCookie.getUrl(), IP.IP2)) {
+                        ipTotal.setIp2Total(total);
+                    } else if (StrUtil.contains(ipCookie.getUrl(), IP.IP3)) {
+                        ipTotal.setIp3Total(total);
+                    } else if (StrUtil.contains(ipCookie.getUrl(), IP.IP4)) {
+                        ipTotal.setIp4Total(total);
+                    } else if (StrUtil.contains(ipCookie.getUrl(), IP.IP5)) {
+                        ipTotal.setIp5Total(total);
+                    } else if (StrUtil.contains(ipCookie.getUrl(), IP.IP6)) {
+                        ipTotal.setIp6Total(total);
+                    }
+                }
+                ipTotal.setIp7Total(ip7Total);
+                ipTotal.setAllTotal(ipTotal.ip1Total + ipTotal.ip2Total + ipTotal.ip3Total + ipTotal.ip4Total + ipTotal.ip5Total + ipTotal.ip6Total + ip7Total);
+                ipTotalList.add(ipTotal);
+            }
 
-        for (IpTotal ipTotal : ipTotalList) {
-            System.out.println("------------------------------------------");
-            Console.log("日期:"+ipTotal.getDate());
-            Console.log(IP.IP1+"=>"+ipTotal.getIp1Total());
-            Console.log(IP.IP2+"=>"+ipTotal.getIp2Total());
-            Console.log(IP.IP3+"=>"+ipTotal.getIp3Total());
-            Console.log(IP.IP4+"=>"+ipTotal.getIp4Total());
-            Console.log(IP.IP5+"=>"+ipTotal.getIp5Total());
-            Console.log(IP.IP6+"=>"+ipTotal.getIp6Total());
-            Console.log(IP.IP7+"=>"+ipTotal.getIp7Total());
-            Console.log("合计=>"+ipTotal.getAllTotal());
+            for (IpTotal ipTotal : ipTotalList) {
+                System.out.println("------------------------------------------");
+                Console.log("日期:" + ipTotal.getDate());
+                Console.log(IP.IP1 + "=>" + ipTotal.getIp1Total());
+                Console.log(IP.IP2 + "=>" + ipTotal.getIp2Total());
+                Console.log(IP.IP3 + "=>" + ipTotal.getIp3Total());
+                Console.log(IP.IP4 + "=>" + ipTotal.getIp4Total());
+                Console.log(IP.IP5 + "=>" + ipTotal.getIp5Total());
+                Console.log(IP.IP6 + "=>" + ipTotal.getIp6Total());
+                Console.log(IP.IP7 + "=>" + ipTotal.getIp7Total());
+                Console.log("合计=>" + ipTotal.getAllTotal());
+            }
+            writeExcel(ipTotalList);
+        }finally {
+            ThreadUtil.sleep(Integer.MAX_VALUE);;
         }
-        writeExcel(ipTotalList);
     }
 
     private static void settingParam() {
@@ -126,7 +131,7 @@ public class K01Query {
         }
     }
 
-    private static Long transform(IpCookie ipCookie, String startTime,String endTime){
+    public static Long transform(IpCookie ipCookie, String startTime,String endTime){
         try {
             String repsBody = HttpRequest.post(ipCookie.getUrl() + ATKMNTLOG_URL)
                     .header("Cookie", ipCookie.getCookie())
@@ -154,7 +159,7 @@ public class K01Query {
             Console.error("生成文件失败，数据为空");
             return;
         }
-        File file = new File(ABSOLUTE_PATH + "K01_"+startDate+"_"+endDate+".xlsx");
+        File file = new File(ABSOLUTE_PATH + "K01_"+DateUtil.format(DateTime.now(), "yyyyMMddHHmmss")+".xlsx");
         FileUtil.del(file);
         ExcelWriter writer = ExcelUtil.getWriter(file)
                 .addHeaderAlias("date", "日期")
