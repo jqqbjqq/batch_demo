@@ -15,7 +15,6 @@ import cn.hutool.json.JSONUtil;
 import cn.hutool.poi.excel.ExcelUtil;
 import cn.hutool.poi.excel.ExcelWriter;
 import cn.hutool.setting.Setting;
-import com.cctv.security.AlarmRuleQuery;
 import lombok.Data;
 import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.HorizontalAlignment;
@@ -24,7 +23,9 @@ import org.apache.poi.ss.usermodel.VerticalAlignment;
 
 import java.io.File;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
 
 public class K01Query {
     static final String ABSOLUTE_PATH = Paths.get("").toAbsolutePath() + File.separator ;
