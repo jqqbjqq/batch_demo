@@ -16,16 +16,14 @@ import cn.hutool.poi.excel.ExcelUtil;
 import cn.hutool.poi.excel.ExcelWriter;
 import cn.hutool.setting.Setting;
 import lombok.Data;
-import org.apache.poi.ss.usermodel.BorderStyle;
-import org.apache.poi.ss.usermodel.HorizontalAlignment;
-import org.apache.poi.ss.usermodel.IndexedColors;
-import org.apache.poi.ss.usermodel.VerticalAlignment;
+import org.apache.poi.ss.usermodel.*;
 
 import java.io.File;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import java.util.stream.IntStream;
 
 public class K01Query {
     static final String ABSOLUTE_PATH = Paths.get("").toAbsolutePath() + File.separator ;
@@ -51,26 +49,29 @@ public class K01Query {
     public static void main() {
         settingParam();
         Scanner scanner = new Scanner(System.in);
-        Console.log("请输入从当前日期往前查询几天(默认"+beforeDay+"天):");
+        Console.log("日期"+endDate+"往前查询几天(默认"+beforeDay+"天)，请输入1~100数字:");
         String input1  = scanner.nextLine();
         if(NumberUtil.isInteger(input1)){
             beforeDay = Integer.parseInt(input1);
+            if(beforeDay>100){
+                Console.error("请输入1~100数字");
+                return;
+            }
         }
-        startDate = getBeforeDate(endDate, beforeDay);
+        startDate = getBeforeDate(endDate, --beforeDay);
         String jsonStr = FileUtil.readUtf8String(ABSOLUTE_PATH+ "ip_token.json");
         List<IpCookie> ipCookieList = JSONUtil.toList(jsonStr, IpCookie.class);
         for (IpCookie ipCookie : ipCookieList) {
             System.out.println("url：" + ipCookie.getUrl());
         }
-        //遍历日期，往前数几个小时
         List<String> dateListBetween = getDateListBetween(startDate, endDate);
         List<IpTotal> ipTotalList = new ArrayList<>();
         for (String time : dateListBetween) {
             IpTotal ipTotal = new IpTotal();
-            ipTotal.setDate(time);
+            String endTime = time+StrUtil.SPACE+hourTime;
+            String startTime = DateUtil.format(DateUtil.offsetHour(DateUtil.parse(endTime),beforeHour), "YYYY-MM-dd HH:mm");
+            ipTotal.setDate(startTime+"~"+endTime);
             for (IpCookie ipCookie : ipCookieList) {
-                String endTime = time+StrUtil.SPACE+hourTime;
-                String startTime = DateUtil.format(DateUtil.offsetHour(DateUtil.parse(endTime),beforeHour), "YYYY-MM-dd HH:mm");
                 Long  total = 100001L;//transform(ipCookie,startTime,endTime);
                 if(StrUtil.contains (ipCookie.getUrl(),IP.IP1)) {
                     ipTotal.setIp1Total(total);
@@ -89,6 +90,19 @@ public class K01Query {
             ipTotal.setIp7Total(ip7Total);
             ipTotal.setAllTotal(ipTotal.ip1Total+ipTotal.ip2Total+ipTotal.ip3Total+ipTotal.ip4Total+ipTotal.ip5Total+ipTotal.ip6Total+ip7Total);
             ipTotalList.add(ipTotal);
+        }
+
+        for (IpTotal ipTotal : ipTotalList) {
+            System.out.println("------------------------------------------");
+            Console.log("日期:"+ipTotal.getDate());
+            Console.log(IP.IP1+"=>"+ipTotal.getIp1Total());
+            Console.log(IP.IP2+"=>"+ipTotal.getIp2Total());
+            Console.log(IP.IP3+"=>"+ipTotal.getIp3Total());
+            Console.log(IP.IP4+"=>"+ipTotal.getIp4Total());
+            Console.log(IP.IP5+"=>"+ipTotal.getIp5Total());
+            Console.log(IP.IP6+"=>"+ipTotal.getIp6Total());
+            Console.log(IP.IP7+"=>"+ipTotal.getIp7Total());
+            Console.log("合计=>"+ipTotal.getAllTotal());
         }
         writeExcel(ipTotalList);
     }
@@ -157,6 +171,14 @@ public class K01Query {
                 .setAlign(HorizontalAlignment.LEFT, VerticalAlignment.CENTER);
         // 一次性写出内容，使用默认样式，强制输出标题
         writer.write(ipTotalList, true);
+
+        //设置自适应所有列列宽
+        Sheet sheet = writer.getSheet();
+        int columnCount = sheet.getRow(0).getLastCellNum();
+        IntStream.range(0, columnCount).forEach(colIndex -> {
+            sheet.autoSizeColumn(colIndex);
+            sheet.setColumnWidth(colIndex, sheet.getColumnWidth(colIndex) + 2 * 256);
+        });
         // 关闭writer，释放内存
         writer.close();
         Console.log("成功->生成文件：{},行数：{}", file.getName(), ipTotalList.size());
