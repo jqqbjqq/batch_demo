@@ -1,0 +1,14 @@
+[
+  {
+    "url": "https://10.4.6.255:9443",
+    "cookie": "SESSIONID=abc123; USER_TOKEN=xyz789"
+  },
+  {
+    "url": "https://10.4.40.226:9443",
+    "cookie": "JSESSIONID=def456; REMEMBER_ME=true"
+  },
+  {
+    "url": "https://10.32.3.33:9443",
+    "cookie": "PHPSESSID=ghi789; LOGIN_STATUS=1"
+  }
+]
