@@ -12,11 +12,8 @@ import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
-import cn.hutool.crypto.digest.DigestAlgorithm;
 import cn.hutool.crypto.digest.DigestUtil;
-import cn.hutool.crypto.digest.Digester;
 import cn.hutool.http.ContentType;
-import cn.hutool.http.Header;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
@@ -24,12 +21,10 @@ import cn.hutool.poi.excel.ExcelUtil;
 import cn.hutool.poi.excel.ExcelWriter;
 import cn.hutool.setting.Setting;
 import lombok.Data;
-import org.apache.commons.codec.digest.HmacUtils;
 import org.apache.poi.ss.usermodel.*;
 
 import java.io.File;
 import java.nio.file.Paths;
-import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -37,14 +32,14 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 
 public class K01Query {
-    static final String ABSOLUTE_PATH = Paths.get("").toAbsolutePath() + File.separator ;
+    static final String ABSOLUTE_PATH = Paths.get("").toAbsolutePath() + File.separator;
     static final String ATKMNTLOG_URL = "/api/v1/logsystem/atkmntlog/query";
     public static final Setting setting = new Setting(ABSOLUTE_PATH + File.separator + "config.setting");
     static int beforeDay = 1;
     static String hourTime = "16:30:00";
     static int beforeHour = -24;
     static long ip7Total = 100L;
-    static String endDate =  DateUtil.today();
+    static String endDate = DateUtil.today();
     static String startDate = "";
     static String KEY = "ed428495-29cc-4a2c-a9dd-4f106af9c104";
 
@@ -86,7 +81,7 @@ public class K01Query {
                 String startTime = DateUtil.format(DateUtil.offsetHour(DateUtil.parse(endTime), beforeHour), "YYYY-MM-dd HH:mm:ss");
                 ipTotal.setDate(startTime + "~" + endTime);
                 for (IpCookie ipCookie : ipCookieList) {
-                    Long total = transform(ipCookie,startTime,endTime);
+                    Long total = transform(ipCookie, startTime, endTime);
                     if (StrUtil.contains(ipCookie.getUrl(), IP.IP1)) {
                         ipTotal.setIp1Total(total);
                     } else if (StrUtil.contains(ipCookie.getUrl(), IP.IP2)) {
@@ -119,69 +114,71 @@ public class K01Query {
                 Console.log("合计=>" + ipTotal.getAllTotal());
             }
             writeExcel(ipTotalList);
-            Console.log("OK!用时:{}秒",timer.intervalSecond());
-        }finally {
+            Console.log("OK!用时:{}秒", timer.intervalSecond());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        } finally {
             ThreadUtil.sleep(Integer.MAX_VALUE);
         }
     }
 
     private static void settingParam() {
-        String c_hourTime =setting.get("hour_time");
+        String c_hourTime = setting.get("hour_time");
         if (StrUtil.isNotBlank(c_hourTime)) {
             hourTime = c_hourTime;
         }
-        String c_beforeDay =setting.get("before_day");
+        String c_beforeDay = setting.get("before_day");
         if (StrUtil.isNotBlank(c_beforeDay)) {
             beforeDay = Integer.parseInt(c_beforeDay);
         }
-        String c_end_date =setting.get("end_date");
+        String c_end_date = setting.get("end_date");
         if (StrUtil.isNotBlank(c_end_date)) {
             endDate = c_end_date;
         }
-        String c_ip7Total =setting.get("ip7_total");
+        String c_ip7Total = setting.get("ip7_total");
         if (StrUtil.isNotBlank(c_ip7Total)) {
             ip7Total = Long.parseLong(c_ip7Total);
         }
     }
 
-    public static Long transform(IpCookie ipCookie, String startTime,String endTime){
+    public static Long transform(IpCookie ipCookie, String startTime, String endTime) {
         try {
+            Console.log("query api:{} ", ipCookie.getUrl());
             String xNonce = String.valueOf(UUID.randomUUID());
             String xTimestamp = String.valueOf(DateUtil.current() / 1000);
             String jsonBody = StrUtil.format("{\"count\":50,\"page\":1,\"filename\":\"Attack_monitoring_log\",\"action_mask\":[]" +
                     ",\"party_3rd_mask\":[],\"type_mask\":[],\"severity_mask\":[],\"r_s_time\":\"{}\",\"r_e_time\":\"{}\"" +
                     ",\"r_sip\":\"\",\"r_dip\":\"\",\"country\":255,\"province\":255,\"cmsn\":\"\"" +
-                    ",\"reqCheckUrl\":\"/api/v1/logsystem/atkmntlog/query\"}",startTime,endTime);
-            String xSign = encrypt(jsonBody,xTimestamp,xNonce);
+                    ",\"reqCheckUrl\":\"/api/v1/logsystem/atkmntlog/query\"}", startTime, endTime);
+            String xSign = encrypt(jsonBody, xTimestamp, xNonce);
             String repsBody = HttpRequest.post(ipCookie.getUrl() + ATKMNTLOG_URL)
                     .header("Cookie", ipCookie.getCookie())
                     .header("Content-Type", ContentType.JSON.getValue())
-                    .header("X-Appkey" , "frontend")
-                    .header("X-Timestamp" , xTimestamp)
+                    .header("X-Appkey", "frontend")
+                    .header("X-Timestamp", xTimestamp)
                     .header("X-Csrf-Access-Token", ReUtil.getGroup1("csrf_access_token=([^;]+)", ipCookie.getCookie()))
                     //.header("Csrf_refresh_token", ReUtil.getGroup1("csrf_refresh_token=([^;]+)", ipCookie.getCookie()))
-                    .header("X-Nonce",xNonce)
-                    .header("X-Sign",xSign)
+                    .header("X-Nonce", xNonce)
+                    .header("X-Sign", xSign)
                     .timeout(5000)
                     .body(jsonBody)
                     .execute().body();
-            Console.log("query api:{} ok!", ipCookie.getUrl());
             //Console.log("repsBody:"+repsBody);
             JSONObject dataObj = JSONUtil.parseObj(repsBody).getJSONObject("data");
             if (dataObj == null) {
                 dataObj = new JSONObject(); // 空节点兜底
             }
             return dataObj.getLong("total", 0L);
-        }catch (Exception e){
-            Console.error("query api:{} error:{}",ipCookie.getUrl(),e.getMessage());
+        } catch (Exception e) {
+            Console.error("query api:{} error:{}", ipCookie.getUrl(), e.getMessage());
             return 0L;
         }
     }
 
-    public static String encrypt(String jsonBody,String xTimestamp,String xNonce){
-        String str1 = Base64.encode(DigestUtil.sha256(jsonBody+xNonce));
-        String str2 = StrUtil.format("x-date: {}\ndigest: SHA-256={}",xTimestamp,str1);
-        return Base64.encode(HmacUtils.hmacSha256(KEY,str2));
+    public static String encrypt(String jsonBody, String xTimestamp, String xNonce) {
+        String str1 = Base64.encode(DigestUtil.sha256(jsonBody + xNonce));
+        String str2 = StrUtil.format("x-date: {}\ndigest: SHA-256={}", xTimestamp, str1);
+        return Base64.encode(SecureUtil.hmacSha256(KEY).digest(str2));
     }
 
     private static void writeExcel(List<IpTotal> ipTotalList) {
@@ -189,7 +186,7 @@ public class K01Query {
             Console.error("生成文件失败，数据为空");
             return;
         }
-        File file = new File(ABSOLUTE_PATH + "K01_"+DateUtil.format(DateTime.now(), "yyyyMMddHHmmss")+".xlsx");
+        File file = new File(ABSOLUTE_PATH + "K01_" + DateUtil.format(DateTime.now(), "yyyyMMddHHmmss") + ".xlsx");
         FileUtil.del(file);
         ExcelWriter writer = ExcelUtil.getWriter(file)
                 .addHeaderAlias("date", "日期")
