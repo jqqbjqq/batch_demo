@@ -1,5 +1,6 @@
 package com.cdb;
 
+import cn.hutool.core.codec.Base64;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
@@ -7,7 +8,12 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.NumberUtil;
+import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.SecureUtil;
+import cn.hutool.crypto.digest.DigestAlgorithm;
+import cn.hutool.crypto.digest.DigestUtil;
+import cn.hutool.crypto.digest.Digester;
 import cn.hutool.http.ContentType;
 import cn.hutool.http.Header;
 import cn.hutool.http.HttpRequest;
@@ -17,6 +23,7 @@ import cn.hutool.poi.excel.ExcelUtil;
 import cn.hutool.poi.excel.ExcelWriter;
 import cn.hutool.setting.Setting;
 import lombok.Data;
+import org.apache.commons.codec.digest.HmacUtils;
 import org.apache.poi.ss.usermodel.*;
 
 import java.io.File;
@@ -24,6 +31,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import java.util.UUID;
 import java.util.stream.IntStream;
 
 public class K01Query {
@@ -36,6 +44,7 @@ public class K01Query {
     static long ip7Total = 100L;
     static String endDate =  DateUtil.today();
     static String startDate = "";
+    static String KEY = "ed428495-29cc-4a2c-a9dd-4f106af9c104";
 
     static class IP {
         static final String IP1 = "10.4.6.255";
@@ -74,7 +83,7 @@ public class K01Query {
                 String startTime = DateUtil.format(DateUtil.offsetHour(DateUtil.parse(endTime), beforeHour), "YYYY-MM-dd HH:mm");
                 ipTotal.setDate(startTime + "~" + endTime);
                 for (IpCookie ipCookie : ipCookieList) {
-                    Long total = 100001L;//transform(ipCookie,startTime,endTime);
+                    Long total = transform(ipCookie,startTime,endTime);
                     if (StrUtil.contains(ipCookie.getUrl(), IP.IP1)) {
                         ipTotal.setIp1Total(total);
                     } else if (StrUtil.contains(ipCookie.getUrl(), IP.IP2)) {
@@ -133,15 +142,27 @@ public class K01Query {
 
     public static Long transform(IpCookie ipCookie, String startTime,String endTime){
         try {
+            String xNonce = String.valueOf(UUID.randomUUID());
+            String xTimestamp = String.valueOf(DateUtil.current() / 1000);
+            String jsonBody = StrUtil.format("\"{\"count\":50,\"page\":1,\"filename\":\"Attack_monitoring_log\",\"action_mask\":[]" +
+                    ",\"party_3rd_mask\":[],\"type_mask\":[],\"severity_mask\":[],\"r_s_time\":\"{}\",\"r_e_time\":\"{}\"" +
+                    ",\"r_sip\":\"\",\"r_dip\":\"\",\"country\":255,\"province\":255,\"cmsn\":\"\"" +
+                    ",\"reqCheckUrl\":\"/api/v1/logsystem/atkmntlog/query\"}\"",startTime,endTime);
+            String xSign = encrypt(jsonBody,xTimestamp,xNonce);
             String repsBody = HttpRequest.post(ipCookie.getUrl() + ATKMNTLOG_URL)
                     .header("Cookie", ipCookie.getCookie())
-                    //.header("X-Csrfcode",XCSRFCODE)
                     .header(Header.CONTENT_TYPE, ContentType.JSON.getValue())
+                    .header("X-Appkey" , "frontend")
+                    .header("X-Timestamp" , xTimestamp)
+                    .header("X-Csrf-Access-Token", ReUtil.getGroup1("csrf_access_token=([^;]+)", ipCookie.getCookie()))
+                    //.header("Csrf_refresh_token", ReUtil.getGroup1("csrf_refresh_token=([^;]+)", ipCookie.getCookie()))
+                    .header("X-Nonce",xNonce)
+                    .header("X-Sign",xSign)
                     .timeout(5000)
-                    .body("{\"count\":50,\"page\":1,\"filename\":\"Attack_monitoring_log\"" +
-                            ",\"r_s_time\":\"" + startTime + "\",\"r_e_time\":\"" + endTime + "\"}")
+                    .body(jsonBody)
                     .execute().body();
-            Console.log("query api:{} \nwaiting...", ipCookie.getUrl()+ATKMNTLOG_URL);
+            Console.log("query api:{} \nwaiting...", ipCookie.getUrl()+ATKMNTLOG_URL+":");
+            Console.log("repsBody:"+repsBody);
             JSONObject dataObj = JSONUtil.parseObj(repsBody).getJSONObject("data");
             if (dataObj == null) {
                 dataObj = new JSONObject(); // 空节点兜底
@@ -153,6 +174,11 @@ public class K01Query {
         }
     }
 
+    public static String encrypt(String jsonBody,String xTimestamp,String xNonce){
+        String str1 = Base64.encode(DigestUtil.sha256(jsonBody+xNonce));
+        String str2 = StrUtil.format("x-data: {}\ndigest: {}",xTimestamp,str1);
+        return Base64.encode(HmacUtils.hmacSha256(xNonce,str2));
+    }
 
     private static void writeExcel(List<IpTotal> ipTotalList) {
         if (CollectionUtil.isEmpty(ipTotalList)) {

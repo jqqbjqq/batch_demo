@@ -1,14 +1,6 @@
 [
   {
-    "url": "https://10.4.6.255:9443",
-    "cookie": "SESSIONID=abc123; USER_TOKEN=xyz789"
-  },
-  {
-    "url": "https://10.4.40.226:9443",
-    "cookie": "JSESSIONID=def456; REMEMBER_ME=true"
-  },
-  {
-    "url": "https://10.32.3.33:9443",
-    "cookie": "PHPSESSID=ghi789; LOGIN_STATUS=1"
+    "url": "https://10.42.255.90:9443/",
+    "cookie": "access_token_cookie=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc2NjEyNTM1MiwianRpIjoiN2JkY2RiODQtODQ0My00ZWRhLTg2ZTQtNjUwM2M0ZGFhMDE3IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6eyJ1c2VyaWQiOjksImN1cnJlbnRBdXRob3JpdHkiOiJhZG1pbiIsImxvZ2luX2xhc3RfdGltZSI6IjIwMjUtMTEtMjcgMTA6NTQ6NDYiLCJ0aW1lb3V0IjozMCwidXNlcm5hbWUiOiJqaXFpYW5nIiwidXNlcnR5cGUiOjEsImdyb3VwaWQiOjEsInB3ZF9jb21wIjoiMSIsInB3ZF9sZW4iOjgsInJhbmRvbSI6IjAzbTU2eGc5MG5vdGw5dzZyaTlheWMwdzB4cWRpMHBjIiwibGljZW5zZSI6MX0sIm5iZiI6MTc2NjEyNTM1MiwiY3NyZiI6IjlkYzM5Yjc4LTgyY2ItNGQzNi04NjllLTg4OGIxY2ExNTdhNSIsImV4cCI6MTc2NjIxMTc1Mn0.OcQ2tqofthNGBgShupde6BTBhkUh1l7Ak2SiLG6sx1sib7JShLiYkDDb0BUWzp8_xRAXCeR6ByvDNo7NxT9FJVqhj_0PNj5po5UBKoUE25Sl7SvOnWj8VztVhDyKeTGxnyXCRHXrWqdd15OfhJwzTJxvo4Cgkq0jKiDRTVGuHNAyv_exJaCwxSvhNfHBQj_Obu0LAJQ-Xse56vFv8fMcum0V4ewSIJSd6y3rHg_fp4f8QDX5PY0cBm1ecOn4afGnkMa8zO5Tl7Q6tRbSnVGu93caX1A0QiVdU62W1DkiV1Absuhglx0saZzJpYU2DrAGgsKYYG-NO7zlpzDQWG_USA; session=bca97105-34bb-49cb-a701-c2d0f800219a.H-jpphsm24nCOH91Nd2bBt0HjVc; csrf_access_token=9dc39b78-82cb-4d36-869e-888b1ca157a5; csrf_refresh_token=defec910-6277-4300-9e94-42e47016b15f"
   }
 ]
