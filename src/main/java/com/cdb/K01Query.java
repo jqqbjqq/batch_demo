@@ -4,6 +4,7 @@ import cn.hutool.core.codec.Base64;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
@@ -40,7 +41,7 @@ public class K01Query {
     static final String ATKMNTLOG_URL = "/api/v1/logsystem/atkmntlog/query";
     public static final Setting setting = new Setting(ABSOLUTE_PATH + File.separator + "config.setting");
     static int beforeDay = 1;
-    static String hourTime = "16:30";
+    static String hourTime = "16:30:00";
     static int beforeHour = -24;
     static long ip7Total = 100L;
     static String endDate =  DateUtil.today();
@@ -59,6 +60,7 @@ public class K01Query {
 
     public static void main() {
         try {
+            TimeInterval timer = DateUtil.timer();
             settingParam();
             Scanner scanner = new Scanner(System.in);
             Console.log("日期" + endDate + "往前查询几天(默认" + beforeDay + "天)，请输入1~100数字:");
@@ -81,7 +83,7 @@ public class K01Query {
             for (String time : dateListBetween) {
                 IpTotal ipTotal = new IpTotal();
                 String endTime = time + StrUtil.SPACE + hourTime;
-                String startTime = DateUtil.format(DateUtil.offsetHour(DateUtil.parse(endTime), beforeHour), "YYYY-MM-dd HH:mm");
+                String startTime = DateUtil.format(DateUtil.offsetHour(DateUtil.parse(endTime), beforeHour), "YYYY-MM-dd HH:mm:ss");
                 ipTotal.setDate(startTime + "~" + endTime);
                 for (IpCookie ipCookie : ipCookieList) {
                     Long total = transform(ipCookie,startTime,endTime);
@@ -100,7 +102,7 @@ public class K01Query {
                     }
                 }
                 ipTotal.setIp7Total(ip7Total);
-                ipTotal.setAllTotal(ipTotal.ip1Total + ipTotal.ip2Total + ipTotal.ip3Total + ipTotal.ip4Total + ipTotal.ip5Total + ipTotal.ip6Total + ip7Total);
+                ipTotal.setAllTotal(ipTotal.ip1Total + ipTotal.ip2Total + ipTotal.ip3Total + ipTotal.ip4Total + ipTotal.ip5Total + ipTotal.ip6Total + ipTotal.ip7Total);
                 ipTotalList.add(ipTotal);
             }
 
@@ -117,16 +119,10 @@ public class K01Query {
                 Console.log("合计=>" + ipTotal.getAllTotal());
             }
             writeExcel(ipTotalList);
+            Console.log("OK!用时:{}秒",timer.intervalSecond());
         }finally {
-            ThreadUtil.sleep(Integer.MAX_VALUE);;
+            ThreadUtil.sleep(Integer.MAX_VALUE);
         }
-        /*
-        String jsonBody = "{\"count\":50,\"page\":1,\"filename\":\"Attack_monitoring_log\",\"action_mask\":[],\"party_3rd_mask\":[],\"type_mask\":[],\"severity_mask\":[],\"r_s_time\":\"2025-12-22 00:00:00\",\"r_e_time\":\"2025-12-22 23:59:59\",\"r_sip\":\"\",\"r_dip\":\"\",\"country\":255,\"province\":255,\"cmsn\":\"\",\"reqCheckUrl\":\"/api/v1/logsystem/atkmntlog/query\"}";
-        String xTimestamp = "1766375862";
-        String xNonce = "e49abd91-161b-412c-a4b9-68c7a8b3b618";
-        System.out.println(encrypt(jsonBody,xTimestamp,xNonce));
-        System.out.println("");
-        */
     }
 
     private static void settingParam() {
@@ -152,14 +148,14 @@ public class K01Query {
         try {
             String xNonce = String.valueOf(UUID.randomUUID());
             String xTimestamp = String.valueOf(DateUtil.current() / 1000);
-            String jsonBody = StrUtil.format("\"{\"count\":50,\"page\":1,\"filename\":\"Attack_monitoring_log\",\"action_mask\":[]" +
+            String jsonBody = StrUtil.format("{\"count\":50,\"page\":1,\"filename\":\"Attack_monitoring_log\",\"action_mask\":[]" +
                     ",\"party_3rd_mask\":[],\"type_mask\":[],\"severity_mask\":[],\"r_s_time\":\"{}\",\"r_e_time\":\"{}\"" +
                     ",\"r_sip\":\"\",\"r_dip\":\"\",\"country\":255,\"province\":255,\"cmsn\":\"\"" +
-                    ",\"reqCheckUrl\":\"/api/v1/logsystem/atkmntlog/query\"}\"",startTime,endTime);
+                    ",\"reqCheckUrl\":\"/api/v1/logsystem/atkmntlog/query\"}",startTime,endTime);
             String xSign = encrypt(jsonBody,xTimestamp,xNonce);
             String repsBody = HttpRequest.post(ipCookie.getUrl() + ATKMNTLOG_URL)
                     .header("Cookie", ipCookie.getCookie())
-                    .header(Header.CONTENT_TYPE, ContentType.JSON.getValue())
+                    .header("Content-Type", ContentType.JSON.getValue())
                     .header("X-Appkey" , "frontend")
                     .header("X-Timestamp" , xTimestamp)
                     .header("X-Csrf-Access-Token", ReUtil.getGroup1("csrf_access_token=([^;]+)", ipCookie.getCookie()))
@@ -169,15 +165,15 @@ public class K01Query {
                     .timeout(5000)
                     .body(jsonBody)
                     .execute().body();
-            Console.log("query api:{} \nwaiting...", ipCookie.getUrl()+ATKMNTLOG_URL+":");
-            Console.log("repsBody:"+repsBody);
+            Console.log("query api:{} ok!", ipCookie.getUrl());
+            //Console.log("repsBody:"+repsBody);
             JSONObject dataObj = JSONUtil.parseObj(repsBody).getJSONObject("data");
             if (dataObj == null) {
                 dataObj = new JSONObject(); // 空节点兜底
             }
             return dataObj.getLong("total", 0L);
         }catch (Exception e){
-            Console.error(ipCookie.getUrl()+ATKMNTLOG_URL+"调用错误：{}",e.getMessage());
+            Console.error("query api:{} error:{}",ipCookie.getUrl(),e.getMessage());
             return 0L;
         }
     }
@@ -220,7 +216,7 @@ public class K01Query {
         });
         // 关闭writer，释放内存
         writer.close();
-        Console.log("成功->生成文件：{},行数：{}", file.getName(), ipTotalList.size());
+        Console.log("生成文件：{},行数：{}", file.getName(), ipTotalList.size());
     }
 
 
