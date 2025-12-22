@@ -28,6 +28,7 @@ import org.apache.poi.ss.usermodel.*;
 
 import java.io.File;
 import java.nio.file.Paths;
+import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -119,6 +120,13 @@ public class K01Query {
         }finally {
             ThreadUtil.sleep(Integer.MAX_VALUE);;
         }
+        /*
+        String jsonBody = "{\"count\":50,\"page\":1,\"filename\":\"Attack_monitoring_log\",\"action_mask\":[],\"party_3rd_mask\":[],\"type_mask\":[],\"severity_mask\":[],\"r_s_time\":\"2025-12-22 00:00:00\",\"r_e_time\":\"2025-12-22 23:59:59\",\"r_sip\":\"\",\"r_dip\":\"\",\"country\":255,\"province\":255,\"cmsn\":\"\",\"reqCheckUrl\":\"/api/v1/logsystem/atkmntlog/query\"}";
+        String xTimestamp = "1766375862";
+        String xNonce = "e49abd91-161b-412c-a4b9-68c7a8b3b618";
+        System.out.println(encrypt(jsonBody,xTimestamp,xNonce));
+        System.out.println("");
+        */
     }
 
     private static void settingParam() {
@@ -176,8 +184,8 @@ public class K01Query {
 
     public static String encrypt(String jsonBody,String xTimestamp,String xNonce){
         String str1 = Base64.encode(DigestUtil.sha256(jsonBody+xNonce));
-        String str2 = StrUtil.format("x-data: {}\ndigest: {}",xTimestamp,str1);
-        return Base64.encode(HmacUtils.hmacSha256(xNonce,str2));
+        String str2 = StrUtil.format("x-date: {}\ndigest: SHA-256={}",xTimestamp,str1);
+        return Base64.encode(HmacUtils.hmacSha256(KEY,str2));
     }
 
     private static void writeExcel(List<IpTotal> ipTotalList) {
