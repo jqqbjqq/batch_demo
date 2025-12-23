@@ -44,7 +44,7 @@ public class K01Query {
     static String KEY = "ed428495-29cc-4a2c-a9dd-4f106af9c104";
 
     static class IP {
-        static final String IP1 = "10.4.6.255";
+        static final String IP1 = "10.4.6.225";
         static final String IP2 = "10.4.40.226";
         static final String IP3 = "10.32.3.33";
         static final String IP4 = "10.32.64.97";
@@ -70,16 +70,14 @@ public class K01Query {
             startDate = getBeforeDate(endDate, --beforeDay);
             String jsonStr = FileUtil.readUtf8String(ABSOLUTE_PATH + "ip_token.json");
             List<IpCookie> ipCookieList = JSONUtil.toList(jsonStr, IpCookie.class);
-            for (IpCookie ipCookie : ipCookieList) {
-                System.out.println("url：" + ipCookie.getUrl());
-            }
             List<String> dateListBetween = getDateListBetween(startDate, endDate);
             List<IpTotal> ipTotalList = new ArrayList<>();
             for (String time : dateListBetween) {
                 IpTotal ipTotal = new IpTotal();
                 String endTime = time + StrUtil.SPACE + hourTime;
                 String startTime = DateUtil.format(DateUtil.offsetHour(DateUtil.parse(endTime), beforeHour), "YYYY-MM-dd HH:mm:ss");
-                ipTotal.setDate(startTime + "~" + endTime);
+                ipTotal.setDate("["+startTime + "~" + endTime+"]");
+                Console.log(ipTotal.getDate());
                 for (IpCookie ipCookie : ipCookieList) {
                     Long total = transform(ipCookie, startTime, endTime);
                     if (StrUtil.contains(ipCookie.getUrl(), IP.IP1)) {
@@ -160,7 +158,7 @@ public class K01Query {
                     //.header("Csrf_refresh_token", ReUtil.getGroup1("csrf_refresh_token=([^;]+)", ipCookie.getCookie()))
                     .header("X-Nonce", xNonce)
                     .header("X-Sign", xSign)
-                    .timeout(5000)
+                    .timeout(10000)
                     .body(jsonBody)
                     .execute().body();
             //Console.log("repsBody:"+repsBody);

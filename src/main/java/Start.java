@@ -21,5 +21,10 @@ public class Start {
             default:
                 Console.log("启动参数错误");
         }
+
+        Thread.setDefaultUncaughtExceptionHandler((t,e)->{
+            e.printStackTrace();
+        });
     }
+
 }

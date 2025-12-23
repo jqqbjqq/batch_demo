@@ -4,13 +4,40 @@ import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.lang.Console;
-import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.cron.CronUtil;
+import cn.hutool.cron.task.Task;
 import cn.hutool.json.JSONUtil;
+
 import java.util.List;
 
 public class K01KeepApi {
 
+    static String apiCron = "0 0 * * * ?";
+
     public static void main() {
+        Console.log("refresh cookies running");
+        String api_cron = K01Query.setting.get("api_cron");
+        if (StrUtil.isNotBlank(api_cron)) {
+            apiCron = api_cron;
+        }
+        CronUtil.schedule(apiCron, new Task() {
+            @Override
+            public void execute() {
+                Console.log("刷新cookies程序,窗口不要关闭!!!");
+                api();
+            }
+        });
+        CronUtil.setMatchSecond(true);
+        CronUtil.start();
+        try {
+            Thread.currentThread().join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void api() {
         try {
             String jsonStr = FileUtil.readUtf8String(K01Query.ABSOLUTE_PATH + "ip_token.json");
             List<K01Query.IpCookie> ipCookieList = JSONUtil.toList(jsonStr, K01Query.IpCookie.class);
@@ -21,9 +48,6 @@ public class K01KeepApi {
             }
         }catch (Exception e){
             e.printStackTrace();
-        }finally {
-            Console.log("窗口10秒后，自动关闭");
-            ThreadUtil.sleep(10 * 1000);
         }
     }
 }
