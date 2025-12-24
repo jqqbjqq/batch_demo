@@ -25,11 +25,8 @@ public class K01DayQuery  extends ApiBase{
     static int beforeDay = 1;
     static String hourTime = "16:30:00";
     static int beforeHour = -24;
-    static long ip7Total = 100L;
     static String endDate = DateUtil.today();
     static String startDate = "";
-
-
 
     public static void main() {
         try {

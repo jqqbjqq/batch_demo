@@ -1,6 +1,7 @@
 package com.cdb;
 
 import cn.hutool.core.codec.Base64;
+import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.ReUtil;
@@ -23,6 +24,7 @@ public class ApiBase {
     static final String ATKMNTLOG_URL = "/api/v1/logsystem/atkmntlog/query";
     public static final Setting setting = new Setting(ABSOLUTE_PATH + File.separator + "config.setting");
     static String KEY = "ed428495-29cc-4a2c-a9dd-4f106af9c104";
+    static long ip7Total = 100L;
 
     static class IP {
         static final String IP1 = "10.4.6.225";
@@ -72,6 +74,24 @@ public class ApiBase {
         String str1 = Base64.encode(DigestUtil.sha256(jsonBody + xNonce));
         String str2 = StrUtil.format("x-date: {}\ndigest: SHA-256={}", xTimestamp, str1);
         return Base64.encode(SecureUtil.hmacSha256(KEY).digest(str2));
+    }
+
+    public static boolean isValidDateTime(String dateStr) {
+        // 1. 前置过滤：空值/长度不符直接返回false
+        if (StrUtil.isBlank(dateStr) || dateStr.trim().length() != 19) {
+            return false;
+        }
+        String format = "yyyy-MM-dd HH:mm:ss";
+        try {
+            // 2. 尝试解析日期（低版本DateUtil.parse）
+            DateTime dateTime = DateUtil.parse(dateStr, format);
+            // 3. 反向校验：解析后的日期转回字符串，必须与原字符串一致（严格匹配）
+            String formatStr = DateUtil.format(dateTime, format);
+            return StrUtil.equals(dateStr.trim(), formatStr);
+        } catch (Exception e) {
+            // 解析失败（如13月、25时）直接返回false
+            return false;
+        }
     }
 
     @Data
