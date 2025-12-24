@@ -1,7 +1,7 @@
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.ArrayUtil;
-import com.cdb.K01KeepApi;
-import com.cdb.K01Query;
+import com.cdb.K01DayQuery;
+import com.cdb.K01RefreshApi;
 
 
 public class Start {
@@ -12,11 +12,11 @@ public class Start {
             return;
         }
         switch (args[0]) {
-            case "K01Query":
-                K01Query.main();
+            case "K01DayQuery":
+                K01DayQuery.main();
                 break;
-            case "K01KeepApi":
-                K01KeepApi.main();
+            case "K01RefreshApi":
+                K01RefreshApi.main();
                 break;
             default:
                 Console.log("启动参数错误");

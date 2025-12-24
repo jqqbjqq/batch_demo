@@ -11,13 +11,13 @@ import cn.hutool.json.JSONUtil;
 
 import java.util.List;
 
-public class K01KeepApi {
+public class K01RefreshApi {
 
     static String apiCron = "0 0 * * * ?";
 
     public static void main() {
         Console.log("refresh cookies running");
-        String api_cron = K01Query.setting.get("api_cron");
+        String api_cron = K01DayQuery.setting.get("api_cron");
         if (StrUtil.isNotBlank(api_cron)) {
             apiCron = api_cron;
         }
@@ -39,12 +39,12 @@ public class K01KeepApi {
 
     private static void api() {
         try {
-            String jsonStr = FileUtil.readUtf8String(K01Query.ABSOLUTE_PATH + "ip_token.json");
-            List<K01Query.IpCookie> ipCookieList = JSONUtil.toList(jsonStr, K01Query.IpCookie.class);
+            String jsonStr = FileUtil.readUtf8String(K01DayQuery.ABSOLUTE_PATH + "ip_token.json");
+            List<K01DayQuery.IpCookie> ipCookieList = JSONUtil.toList(jsonStr, K01DayQuery.IpCookie.class);
             String datetime = DateUtil.format(DateTime.now(), "yyyy-MM-dd HH:mm:ss");
-            for (K01Query.IpCookie ipCookie : ipCookieList) {
+            for (K01DayQuery.IpCookie ipCookie : ipCookieList) {
                 Console.log(DateUtil.now() + " 定时刷新API接口:" + ipCookie.getUrl());
-                K01Query.transform(ipCookie, datetime, datetime);
+                K01DayQuery.transform(ipCookie, datetime, datetime);
             }
         }catch (Exception e){
             e.printStackTrace();

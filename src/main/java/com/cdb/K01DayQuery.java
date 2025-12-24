@@ -31,7 +31,7 @@ import java.util.Scanner;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
-public class K01Query {
+public class K01DayQuery {
     static final String ABSOLUTE_PATH = Paths.get("").toAbsolutePath() + File.separator;
     static final String ATKMNTLOG_URL = "/api/v1/logsystem/atkmntlog/query";
     public static final Setting setting = new Setting(ABSOLUTE_PATH + File.separator + "config.setting");
@@ -78,7 +78,7 @@ public class K01Query {
                 String startTime = DateUtil.format(DateUtil.offsetHour(DateUtil.parse(endTime), beforeHour), "YYYY-MM-dd HH:mm:ss");
                 ipTotal.setDate("["+startTime + "~" + endTime+"]");
                 Console.log(ipTotal.getDate());
-                for (IpCookie ipCookie : ipCookieList) {
+                ipCookieList.parallelStream().forEach(ipCookie -> {
                     Long total = transform(ipCookie, startTime, endTime);
                     if (StrUtil.contains(ipCookie.getUrl(), IP.IP1)) {
                         ipTotal.setIp1Total(total);
@@ -93,7 +93,7 @@ public class K01Query {
                     } else if (StrUtil.contains(ipCookie.getUrl(), IP.IP6)) {
                         ipTotal.setIp6Total(total);
                     }
-                }
+                });
                 ipTotal.setIp7Total(ip7Total);
                 ipTotal.setAllTotal(ipTotal.ip1Total + ipTotal.ip2Total + ipTotal.ip3Total + ipTotal.ip4Total + ipTotal.ip5Total + ipTotal.ip6Total + ipTotal.ip7Total);
                 ipTotalList.add(ipTotal);
