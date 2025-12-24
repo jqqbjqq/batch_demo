@@ -1,59 +1,18 @@
 package com;
 
-import cn.hutool.core.collection.ListUtil;
-import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.date.TimeInterval;
-import cn.hutool.core.lang.Console;
-import cn.hutool.core.thread.ThreadUtil;
-import cn.hutool.core.util.StrUtil;
-import com.cctv.security.YunjingHostQuery;
-import java.awt.SystemTray;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.CopyOnWriteArrayList;
+import cn.hutool.core.util.ReUtil;
 
-/**
- * @author jiqq
- * @date 2024/4/11
- * @description
- */
+
 public class Test {
 
     public static void main(String[] args) {
-    /*    TimeInterval timer = DateUtil.timer();
-        List<Integer> itemList = new ArrayList<>();
-        for (int i = 0; i <= 10000; i++) {
-            itemList.add(i);
-        }
-
-       // List<Integer> all = new CopyOnWriteArrayList<>();
-
-        List<Integer> all = Collections.synchronizedList(new ArrayList<>());
-
-        List<List<Integer>> partition = ListUtil.partition(itemList, 20);
-        for (List<Integer>  list: partition) {
-            list.stream().forEach(item->{
-                System.out.println(item);
-                if(item/100==0){
-                    int i = 1 / 0;
-                    //ThreadUtil.sleep(10);
-                }
-                all.add(item);
-            });
-        }
-        System.out.println(all.size());
-        Console.log("全部处理完成,耗时:{}秒", timer.intervalSecond());*/
-
-
-
-        String str = "/中央广播电视总台/光华路办公区/云数据中心运行部/综合信息门户";
-        System.out.println(str.split("/")[3]);
-
+        String str = "GgsKYYG-NO7zlpzDQWG_USA; session=bca97105-34bb-49cb-a701-c2d0f800219a" +
+                ".H-jpphsm24nCOH91Nd2bBt0HjVc; csrf_access_token=9dc39b78-82cb-4d36-869e-888b1ca157a5; " +
+                "csrf_refresh_token=defec910-6277-4300-9e94-42e47016b15f;xxx";
+        String g1 = ReUtil.getGroup1("csrf_access_token=([^;]+)", str);
+        String g2 = ReUtil.getGroup1("csrf_refresh_token=([^;]+)", str);
+        System.out.println(g1);
+        System.out.println(g2);
     }
-
-
 
 }

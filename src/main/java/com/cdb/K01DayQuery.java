@@ -76,7 +76,7 @@ public class K01DayQuery  extends ApiBase{
             }
 
             for (IpTotal ipTotal : ipTotalList) {
-                System.out.println("------------------------------------------");
+                System.out.println("----------------------------------------");
                 Console.log("日期:" + ipTotal.getDate());
                 Console.log(IP.IP1 + "=>" + ipTotal.getIp1Total());
                 Console.log(IP.IP2 + "=>" + ipTotal.getIp2Total());

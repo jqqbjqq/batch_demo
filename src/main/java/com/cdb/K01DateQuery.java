@@ -75,7 +75,7 @@ public class K01DateQuery extends ApiBase{
             ipTotal.setAllTotal(ipTotal.getIp1Total() + ipTotal.getIp2Total() + ipTotal.getIp3Total()
                     + ipTotal.getIp4Total() + ipTotal.getIp5Total() + ipTotal.getIp6Total() + ipTotal.getIp7Total());
 
-            System.out.println("------------------------------------------");
+            System.out.println("----------------------------------------");
             Console.log("日期:" + ipTotal.getDate());
             Console.log(IP.IP1 + "=>" + ipTotal.getIp1Total());
             Console.log(IP.IP2 + "=>" + ipTotal.getIp2Total());

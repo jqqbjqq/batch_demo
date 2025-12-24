@@ -52,7 +52,7 @@ public class ApiBase {
                     .header("X-Appkey", "frontend")
                     .header("X-Timestamp", xTimestamp)
                     .header("X-Csrf-Access-Token", ReUtil.getGroup1("csrf_access_token=([^;]+)", ipCookie.getCookie()))
-                    //.header("Csrf_refresh_token", ReUtil.getGroup1("csrf_refresh_token=([^;]+)", ipCookie.getCookie()))
+                    .header("X-Csrf_Refresh_Token", ReUtil.getGroup1("csrf_refresh_token=([^;]+)", ipCookie.getCookie()))
                     .header("X-Nonce", xNonce)
                     .header("X-Sign", xSign)
                     .timeout(10000)
