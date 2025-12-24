@@ -11,22 +11,19 @@ import cn.hutool.json.JSONUtil;
 
 import java.util.List;
 
-public class K01RefreshApi {
+public class K01RefreshApi extends ApiBase {
 
     static String apiCron = "0 0 * * * ?";
 
     public static void main() {
         Console.log("refresh cookies running");
-        String api_cron = K01DayQuery.setting.get("api_cron");
+        String api_cron = setting.get("api_cron");
         if (StrUtil.isNotBlank(api_cron)) {
             apiCron = api_cron;
         }
-        CronUtil.schedule(apiCron, new Task() {
-            @Override
-            public void execute() {
-                Console.log("刷新cookies程序,窗口不要关闭!!!");
-                api();
-            }
+        CronUtil.schedule(apiCron, (Task) () -> {
+            Console.log("刷新cookies程序,窗口不要关闭!!!");
+            api();
         });
         CronUtil.setMatchSecond(true);
         CronUtil.start();
@@ -39,12 +36,12 @@ public class K01RefreshApi {
 
     private static void api() {
         try {
-            String jsonStr = FileUtil.readUtf8String(K01DayQuery.ABSOLUTE_PATH + "ip_token.json");
-            List<K01DayQuery.IpCookie> ipCookieList = JSONUtil.toList(jsonStr, K01DayQuery.IpCookie.class);
+            String jsonStr = FileUtil.readUtf8String(ABSOLUTE_PATH + "ip_token.json");
+            List<IpCookie> ipCookieList = JSONUtil.toList(jsonStr, IpCookie.class);
             String datetime = DateUtil.format(DateTime.now(), "yyyy-MM-dd HH:mm:ss");
-            for (K01DayQuery.IpCookie ipCookie : ipCookieList) {
+            for (IpCookie ipCookie : ipCookieList) {
                 Console.log(DateUtil.now() + " 定时刷新API接口:" + ipCookie.getUrl());
-                K01DayQuery.transform(ipCookie, datetime, datetime);
+                transform(ipCookie, datetime, datetime);
             }
         }catch (Exception e){
             e.printStackTrace();
