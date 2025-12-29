@@ -50,7 +50,7 @@ public class K01DayQuery  extends ApiBase{
             for (String time : dateListBetween) {
                 IpTotal ipTotal = new IpTotal();
                 String endTime = time + StrUtil.SPACE + hourTime;
-                String startTime = DateUtil.format(DateUtil.offsetHour(DateUtil.parse(endTime), beforeHour), "YYYY-MM-dd HH:mm:ss");
+                String startTime = DateUtil.format(DateUtil.offsetHour(DateUtil.parse(endTime), beforeHour), "yyyy-MM-dd HH:mm:ss");
                 ipTotal.setDate("["+startTime + "~" + endTime+"]");
                 Console.log(ipTotal.getDate());
                 ipCookieList.parallelStream().forEach(ipCookie -> {
