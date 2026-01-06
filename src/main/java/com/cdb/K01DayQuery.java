@@ -34,60 +34,63 @@ public class K01DayQuery  extends ApiBase{
             settingParam();
             Scanner scanner = new Scanner(System.in);
             Console.log("日期" + endDate + "往前查询几天(默认" + beforeDay + "天)，请输入1~100数字:");
-            String input1 = scanner.nextLine();
-            if (NumberUtil.isInteger(input1)) {
-                beforeDay = Integer.parseInt(input1);
-                if (beforeDay > 100 || beforeDay <= 0) {
-                    Console.error("输入错误，请关闭当前窗口，重新打开窗口!");
-                    return;
+            while(true) {
+                String input1 = scanner.nextLine();
+                if (NumberUtil.isInteger(input1)) {
+                    beforeDay = Integer.parseInt(input1);
+                    if (beforeDay > 0 && beforeDay < 100) {
+                        break;
+                    }else{
+                        Console.error("输入错误，请重新输入!");
+                    }
                 }
             }
             startDate = getBeforeDate(endDate, --beforeDay);
             String jsonStr = FileUtil.readUtf8String(ABSOLUTE_PATH + "ip_token.json");
             List<IpCookie> ipCookieList = JSONUtil.toList(jsonStr, IpCookie.class);
             List<String> dateListBetween = getDateListBetween(startDate, endDate);
-            List<IpTotal> ipTotalList = new ArrayList<>();
+            List<DataTotal> dataTotalList = new ArrayList<>();
             for (String time : dateListBetween) {
-                IpTotal ipTotal = new IpTotal();
+                DataTotal dataTotal = new DataTotal();
                 String endTime = time + StrUtil.SPACE + hourTime;
                 String startTime = DateUtil.format(DateUtil.offsetHour(DateUtil.parse(endTime), beforeHour), "yyyy-MM-dd HH:mm:ss");
-                ipTotal.setDate("["+startTime + "~" + endTime+"]");
-                Console.log(ipTotal.getDate());
+                dataTotal.setDate("["+startTime + "~" + endTime+"]");
+                Console.log(dataTotal.getDate());
                 ipCookieList.parallelStream().forEach(ipCookie -> {
-                    Long total = transform(ipCookie, startTime, endTime);
+                    Long logTotal = atkmntlog(ipCookie, startTime, endTime);
                     if (StrUtil.contains(ipCookie.getUrl(), IP.IP1)) {
-                        ipTotal.setIp1Total(total);
+                        dataTotal.setLog1Total(logTotal);
                     } else if (StrUtil.contains(ipCookie.getUrl(), IP.IP2)) {
-                        ipTotal.setIp2Total(total);
+                        dataTotal.setLog2Total(logTotal);
                     } else if (StrUtil.contains(ipCookie.getUrl(), IP.IP3)) {
-                        ipTotal.setIp3Total(total);
+                        dataTotal.setLog3Total(logTotal);
                     } else if (StrUtil.contains(ipCookie.getUrl(), IP.IP4)) {
-                        ipTotal.setIp4Total(total);
+                        dataTotal.setLog4Total(logTotal);
                     } else if (StrUtil.contains(ipCookie.getUrl(), IP.IP5)) {
-                        ipTotal.setIp5Total(total);
+                        dataTotal.setLog5Total(logTotal);
                     } else if (StrUtil.contains(ipCookie.getUrl(), IP.IP6)) {
-                        ipTotal.setIp6Total(total);
+                        dataTotal.setLog6Total(logTotal);
                     }
                 });
-                ipTotal.setIp7Total(ip7Total);
-                ipTotal.setAllTotal(ipTotal.getIp1Total() + ipTotal.getIp2Total() + ipTotal.getIp3Total()
-                        + ipTotal.getIp4Total() + ipTotal.getIp5Total() + ipTotal.getIp6Total() + ipTotal.getIp7Total());
-                ipTotalList.add(ipTotal);
+                dataTotal.setLog7Total(ip7Total);
+                dataTotal.setAllLogTotal(dataTotal.getLog1Total() + dataTotal.getLog2Total() + dataTotal.getLog3Total()
+                        + dataTotal.getLog4Total() + dataTotal.getLog5Total() + dataTotal.getLog6Total() + dataTotal.getLog7Total());
+                dataTotalList.add(dataTotal);
             }
 
-            for (IpTotal ipTotal : ipTotalList) {
+            for (DataTotal dataTotal : dataTotalList) {
                 System.out.println("----------------------------------------");
-                Console.log("日期:" + ipTotal.getDate());
-                Console.log(IP.IP1 + "=>" + ipTotal.getIp1Total());
-                Console.log(IP.IP2 + "=>" + ipTotal.getIp2Total());
-                Console.log(IP.IP3 + "=>" + ipTotal.getIp3Total());
-                Console.log(IP.IP4 + "=>" + ipTotal.getIp4Total());
-                Console.log(IP.IP5 + "=>" + ipTotal.getIp5Total());
-                Console.log(IP.IP6 + "=>" + ipTotal.getIp6Total());
-                Console.log(IP.IP7 + "=>" + ipTotal.getIp7Total());
-                Console.log("合计=>" + ipTotal.getAllTotal());
+                Console.log("日期:" + dataTotal.getDate());
+                Console.log(IP.IP1 + "=>" + dataTotal.getLog1Total());
+                Console.log(IP.IP2 + "=>" + dataTotal.getLog2Total());
+                Console.log(IP.IP3 + "=>" + dataTotal.getLog3Total());
+                Console.log(IP.IP4 + "=>" + dataTotal.getLog4Total());
+                Console.log(IP.IP5 + "=>" + dataTotal.getLog5Total());
+                Console.log(IP.IP6 + "=>" + dataTotal.getLog6Total());
+                Console.log(IP.IP7 + "=>" + dataTotal.getLog7Total());
+                Console.log("合计=>" + dataTotal.getAllLogTotal());
             }
-            writeExcel(ipTotalList);
+            writeExcel(dataTotalList);
             Console.log("OK!用时:{}秒", timer.intervalSecond());
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -115,8 +118,8 @@ public class K01DayQuery  extends ApiBase{
         }
     }
 
-    private static void writeExcel(List<IpTotal> ipTotalList) {
-        if (CollectionUtil.isEmpty(ipTotalList)) {
+    private static void writeExcel(List<DataTotal> dataTotalList) {
+        if (CollectionUtil.isEmpty(dataTotalList)) {
             Console.error("生成文件失败，数据为空");
             return;
         }
@@ -124,19 +127,19 @@ public class K01DayQuery  extends ApiBase{
         FileUtil.del(file);
         ExcelWriter writer = ExcelUtil.getWriter(file)
                 .addHeaderAlias("date", "日期")
-                .addHeaderAlias("ip1Total", IP.IP1)
-                .addHeaderAlias("ip2Total", IP.IP2)
-                .addHeaderAlias("ip3Total", IP.IP3)
-                .addHeaderAlias("ip4Total", IP.IP4)
-                .addHeaderAlias("ip5Total", IP.IP5)
-                .addHeaderAlias("ip6Total", IP.IP6)
-                .addHeaderAlias("ip7Total", IP.IP7)
-                .addHeaderAlias("allTotal", "合计");
+                .addHeaderAlias("log1Total", IP.IP1)
+                .addHeaderAlias("log2Total", IP.IP2)
+                .addHeaderAlias("log3Total", IP.IP3)
+                .addHeaderAlias("log4Total", IP.IP4)
+                .addHeaderAlias("log5Total", IP.IP5)
+                .addHeaderAlias("log6Total", IP.IP6)
+                .addHeaderAlias("log7Total", IP.IP7)
+                .addHeaderAlias("allLogTotal", "合计");
         writer.setOnlyAlias(true);
         writer.getStyleSet().setBorder(BorderStyle.NONE, IndexedColors.AUTOMATIC)
                 .setAlign(HorizontalAlignment.LEFT, VerticalAlignment.CENTER);
         // 一次性写出内容，使用默认样式，强制输出标题
-        writer.write(ipTotalList, true);
+        writer.write(dataTotalList, true);
 
         //设置自适应所有列列宽
         Sheet sheet = writer.getSheet();
@@ -147,7 +150,7 @@ public class K01DayQuery  extends ApiBase{
         });
         // 关闭writer，释放内存
         writer.close();
-        Console.log("生成文件：{},行数：{}", file.getName(), ipTotalList.size());
+        Console.log("生成文件：{},行数：{}", file.getName(), dataTotalList.size());
     }
 
 

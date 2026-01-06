@@ -1,5 +1,6 @@
 # hour_time=18:00
 # before_day=10
 # end_date=2023-03-05
-# ip7_total=200
+# log7_total=200
+# ip7_total=10
 # api_cron=0 * * * * ?

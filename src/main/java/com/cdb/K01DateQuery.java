@@ -1,28 +1,23 @@
 package com.cdb;
 
-import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
-import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
-import cn.hutool.poi.excel.ExcelUtil;
-import cn.hutool.poi.excel.ExcelWriter;
-import org.apache.poi.ss.usermodel.*;
 
-import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-import java.util.stream.IntStream;
 
 public class K01DateQuery extends ApiBase{
 
     private static void settingParam() {
+        String c_log7Total = setting.get("log7_total");
+        if (StrUtil.isNotBlank(c_log7Total)) {
+            log7Total = Long.parseLong(c_log7Total);
+        }
         String c_ip7Total = setting.get("ip7_total");
         if (StrUtil.isNotBlank(c_ip7Total)) {
             ip7Total = Long.parseLong(c_ip7Total);
@@ -33,58 +28,76 @@ public class K01DateQuery extends ApiBase{
         try {
             TimeInterval timer = DateUtil.timer();
             settingParam();
-
             Scanner scanner = new Scanner(System.in);
+
             Console.log("请输入开始日期，格式为(YYYY-MM-dd HH:mm:ss):");
-            String startTime = scanner.nextLine();
-            if (!isValidDateTime(startTime)) {
-                Console.error("输入错误，请关闭当前窗口，重新打开窗口!");
-                return;
+            String p_startTime = "";
+            while(true) {
+                p_startTime = scanner.nextLine();
+                if (isValidDateTime(p_startTime)) {
+                    break;
+                }else{
+                    Console.error("开始日期格式错误，请重新输入!");
+                }
             }
 
             Console.log("请输入结束日期，格式为(YYYY-MM-dd HH:mm:ss):");
-            String endTime = scanner.nextLine();
-            if (!isValidDateTime(endTime)) {
-                Console.error("输入错误，请关闭当前窗口，重新打开窗口!");
-                return;
+            String p_endTime = "";
+            while(true) {
+                p_endTime = scanner.nextLine();
+                if (isValidDateTime(p_endTime)) {
+                    break;
+                }else{
+                    Console.error("结束日期格式错误，请重新输入!");
+                }
             }
 
             String jsonStr = FileUtil.readUtf8String(ABSOLUTE_PATH + "ip_token.json");
             List<IpCookie> ipCookieList = JSONUtil.toList(jsonStr, IpCookie.class);
-
-            IpTotal ipTotal = new IpTotal();
-            ipTotal.setDate("["+startTime + "~" + endTime+"]");
-            Console.log(ipTotal.getDate());
+            DataTotal dataTotal = new DataTotal();
+            final String startTime = p_startTime;
+            final String endTime = p_endTime;
+            dataTotal.setDate("["+startTime + "~" + endTime+"]");
+            Console.log(dataTotal.getDate());
             ipCookieList.parallelStream().forEach(ipCookie -> {
-                Long total = transform(ipCookie, startTime, endTime);
+                Long logTotal = atkmntlog(ipCookie, startTime, endTime);
+                Long ipTotal = atkip(ipCookie, startTime, endTime);
                 if (StrUtil.contains(ipCookie.getUrl(), IP.IP1)) {
-                    ipTotal.setIp1Total(total);
+                    dataTotal.setLog1Total(logTotal);
+                    dataTotal.setIp1Total(ipTotal);
                 } else if (StrUtil.contains(ipCookie.getUrl(), IP.IP2)) {
-                    ipTotal.setIp2Total(total);
+                    dataTotal.setLog2Total(logTotal);
+                    dataTotal.setIp2Total(ipTotal);
                 } else if (StrUtil.contains(ipCookie.getUrl(), IP.IP3)) {
-                    ipTotal.setIp3Total(total);
+                    dataTotal.setLog3Total(logTotal);
+                    dataTotal.setIp3Total(ipTotal);
                 } else if (StrUtil.contains(ipCookie.getUrl(), IP.IP4)) {
-                    ipTotal.setIp4Total(total);
+                    dataTotal.setLog4Total(logTotal);
+                    dataTotal.setIp4Total(ipTotal);
                 } else if (StrUtil.contains(ipCookie.getUrl(), IP.IP5)) {
-                    ipTotal.setIp5Total(total);
+                    dataTotal.setLog5Total(logTotal);
+                    dataTotal.setIp5Total(ipTotal);
                 } else if (StrUtil.contains(ipCookie.getUrl(), IP.IP6)) {
-                    ipTotal.setIp6Total(total);
+                    dataTotal.setLog6Total(logTotal);
+                    dataTotal.setIp6Total(ipTotal);
                 }
             });
-            ipTotal.setIp7Total(ip7Total);
-            ipTotal.setAllTotal(ipTotal.getIp1Total() + ipTotal.getIp2Total() + ipTotal.getIp3Total()
-                    + ipTotal.getIp4Total() + ipTotal.getIp5Total() + ipTotal.getIp6Total() + ipTotal.getIp7Total());
-
+            dataTotal.setLog7Total(log7Total);
+            dataTotal.setIp7Total(ip7Total);
+            dataTotal.setAllLogTotal(dataTotal.getLog1Total() + dataTotal.getLog2Total() + dataTotal.getLog3Total()
+                    + dataTotal.getLog4Total() + dataTotal.getLog5Total() + dataTotal.getLog6Total() + dataTotal.getLog7Total());
+            dataTotal.setAllIpTotal(dataTotal.getIp1Total() + dataTotal.getIp2Total() + dataTotal.getIp3Total()
+                    + dataTotal.getIp4Total() + dataTotal.getIp5Total() + dataTotal.getIp6Total() + dataTotal.getIp7Total());
             System.out.println("----------------------------------------");
-            Console.log("日期:" + ipTotal.getDate());
-            Console.log(IP.IP1 + "=>" + ipTotal.getIp1Total());
-            Console.log(IP.IP2 + "=>" + ipTotal.getIp2Total());
-            Console.log(IP.IP3 + "=>" + ipTotal.getIp3Total());
-            Console.log(IP.IP4 + "=>" + ipTotal.getIp4Total());
-            Console.log(IP.IP5 + "=>" + ipTotal.getIp5Total());
-            Console.log(IP.IP6 + "=>" + ipTotal.getIp6Total());
-            Console.log(IP.IP7 + "=>" + ipTotal.getIp7Total());
-            Console.log("合计=>" + ipTotal.getAllTotal());
+            Console.log("日期:" + dataTotal.getDate());
+            Console.log(IP.IP1 + "=> log:" + dataTotal.getLog1Total() + "  ip:" + dataTotal.getIp1Total());
+            Console.log(IP.IP2 + "=> log:" + dataTotal.getLog2Total() + "  ip:" + dataTotal.getIp2Total());
+            Console.log(IP.IP3 + "=> log:" + dataTotal.getLog3Total() + "  ip:" + dataTotal.getIp3Total());
+            Console.log(IP.IP4 + "=> log:" + dataTotal.getLog4Total() + "  ip:" + dataTotal.getIp4Total());
+            Console.log(IP.IP5 + "=> log:" + dataTotal.getLog5Total() + "  ip:" + dataTotal.getIp5Total());
+            Console.log(IP.IP6 + "=> log:" + dataTotal.getLog6Total() + "  ip:" + dataTotal.getIp6Total());
+            Console.log(IP.IP7 + "=> log:" + dataTotal.getLog7Total() + "  ip:" + dataTotal.getIp7Total());
+            Console.log("合计 => log:" + dataTotal.getAllLogTotal()+ "  ip:"+dataTotal.getAllIpTotal());
             Console.log("OK!用时:{}秒", timer.intervalSecond());
         } catch (Exception ex) {
             ex.printStackTrace();

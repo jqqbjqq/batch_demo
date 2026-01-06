@@ -22,9 +22,10 @@ import java.util.UUID;
 public class ApiBase {
     static final String ABSOLUTE_PATH = Paths.get("").toAbsolutePath() + File.separator;
     static final String ATKMNTLOG_URL = "/api/v1/logsystem/atkmntlog/query";
+    static final String ATKEDIP_URL = "/api/v1/logsystem/atkmntlog/atkip/atkedip/query";
     public static final Setting setting = new Setting(ABSOLUTE_PATH + File.separator + "config.setting");
     static String KEY = "ed428495-29cc-4a2c-a9dd-4f106af9c104";
-    static long ip7Total = 100L;
+    static long log7Total = 100L, ip7Total = 10L;
 
     static class IP {
         static final String IP1 = "10.4.6.225";
@@ -36,7 +37,7 @@ public class ApiBase {
         static final String IP7 = "10.42.255.90";
     }
 
-    public static Long transform(K01DayQuery.IpCookie ipCookie, String startTime, String endTime) {
+    public static Long atkmntlog(IpCookie ipCookie, String startTime, String endTime) {
         try {
             Console.log("query api:{} ", ipCookie.getUrl());
             String xNonce = String.valueOf(UUID.randomUUID());
@@ -47,6 +48,40 @@ public class ApiBase {
                     ",\"reqCheckUrl\":\"/api/v1/logsystem/atkmntlog/query\"}", startTime, endTime);
             String xSign = encrypt(jsonBody, xTimestamp, xNonce);
             String repsBody = HttpRequest.post(ipCookie.getUrl() + ATKMNTLOG_URL)
+                    .header("Cookie", ipCookie.getCookie())
+                    .header("Content-Type", ContentType.JSON.getValue())
+                    .header("X-Appkey", "frontend")
+                    .header("X-Timestamp", xTimestamp)
+                    .header("X-Csrf-Access-Token", ReUtil.getGroup1("csrf_access_token=([^;]+)", ipCookie.getCookie()))
+                    .header("X-Csrf_Refresh_Token", ReUtil.getGroup1("csrf_refresh_token=([^;]+)", ipCookie.getCookie()))
+                    .header("X-Nonce", xNonce)
+                    .header("X-Sign", xSign)
+                    .timeout(10000)
+                    .body(jsonBody)
+                    .execute().body();
+            //Console.log("repsBody:"+repsBody);
+            JSONObject dataObj = JSONUtil.parseObj(repsBody).getJSONObject("data");
+            if (dataObj == null) {
+                dataObj = new JSONObject(); // 空节点兜底
+            }
+            return dataObj.getLong("total", 0L);
+        } catch (Exception e) {
+            Console.error("query api:{} error:{}", ipCookie.getUrl(), e.getMessage());
+            return 0L;
+        }
+    }
+
+
+    public static Long atkip(IpCookie ipCookie, String startTime, String endTime) {
+        try {
+            Console.log("query api:{} ", ipCookie.getUrl());
+            String xNonce = String.valueOf(UUID.randomUUID());
+            String xTimestamp = String.valueOf(DateUtil.current() / 1000);
+            String jsonBody = StrUtil.format("{\"count\":50,\"page\":1,\"filename\":\"Attack_IP_log\",\"r_s_time\":\"{}\",\"r_e_time\":\"{}\"" +
+                    ",\"r_sip\":\"\",\"country\":255,\"province\":255,\"sortField\":\"\",\"sortOrder\":\"\",\"cmsn\":\"\"" +
+                    ",\"reqCheckUrl\":\"/api/v1/logsystem/atkmntlog/atkip/atkedip/query\"}", startTime, endTime);
+            String xSign = encrypt(jsonBody, xTimestamp, xNonce);
+            String repsBody = HttpRequest.post(ipCookie.getUrl() + ATKEDIP_URL)
                     .header("Cookie", ipCookie.getCookie())
                     .header("Content-Type", ContentType.JSON.getValue())
                     .header("X-Appkey", "frontend")
@@ -101,8 +136,17 @@ public class ApiBase {
     }
 
     @Data
-    static class IpTotal {
+    static class DataTotal {
         private String date;
+        private Long log1Total = 0L;
+        private Long log2Total = 0L;
+        private Long log3Total = 0L;
+        private Long log4Total = 0L;
+        private Long log5Total = 0L;
+        private Long log6Total = 0L;
+        private Long log7Total = 0L;
+        private Long allLogTotal = 0L;
+
         private Long ip1Total = 0L;
         private Long ip2Total = 0L;
         private Long ip3Total = 0L;
@@ -110,7 +154,8 @@ public class ApiBase {
         private Long ip5Total = 0L;
         private Long ip6Total = 0L;
         private Long ip7Total = 0L;
-        private Long allTotal = 0L;
+        private Long allIpTotal = 0L;
+
     }
 
 }
