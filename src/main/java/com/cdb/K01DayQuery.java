@@ -43,6 +43,8 @@ public class K01DayQuery  extends ApiBase{
                     }else{
                         Console.error("输入错误，请重新输入!");
                     }
+                }else{
+                    Console.error("输入错误，请重新输入!");
                 }
             }
             startDate = getBeforeDate(endDate, --beforeDay);
@@ -81,14 +83,14 @@ public class K01DayQuery  extends ApiBase{
             for (DataTotal dataTotal : dataTotalList) {
                 System.out.println("----------------------------------------");
                 Console.log("日期:" + dataTotal.getDate());
-                Console.log(IP.IP1 + "=>" + dataTotal.getLog1Total());
-                Console.log(IP.IP2 + "=>" + dataTotal.getLog2Total());
-                Console.log(IP.IP3 + "=>" + dataTotal.getLog3Total());
-                Console.log(IP.IP4 + "=>" + dataTotal.getLog4Total());
-                Console.log(IP.IP5 + "=>" + dataTotal.getLog5Total());
-                Console.log(IP.IP6 + "=>" + dataTotal.getLog6Total());
-                Console.log(IP.IP7 + "=>" + dataTotal.getLog7Total());
-                Console.log("合计=>" + dataTotal.getAllLogTotal());
+                Console.log(IP.IP1 + " => " + dataTotal.getLog1Total());
+                Console.log(IP.IP2 + " => " + dataTotal.getLog2Total());
+                Console.log(IP.IP3 + " => " + dataTotal.getLog3Total());
+                Console.log(IP.IP4 + " => " + dataTotal.getLog4Total());
+                Console.log(IP.IP5 + " => " + dataTotal.getLog5Total());
+                Console.log(IP.IP6 + " => " + dataTotal.getLog6Total());
+                Console.log(IP.IP7 + " => " + dataTotal.getLog7Total());
+                Console.log("合计 => " + dataTotal.getAllLogTotal());
             }
             writeExcel(dataTotalList);
             Console.log("OK!用时:{}秒", timer.intervalSecond());

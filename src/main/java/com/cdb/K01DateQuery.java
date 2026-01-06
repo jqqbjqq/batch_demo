@@ -90,13 +90,13 @@ public class K01DateQuery extends ApiBase{
                     + dataTotal.getIp4Total() + dataTotal.getIp5Total() + dataTotal.getIp6Total() + dataTotal.getIp7Total());
             System.out.println("----------------------------------------");
             Console.log("日期:" + dataTotal.getDate());
-            Console.log(IP.IP1 + "=> log:" + dataTotal.getLog1Total() + "  ip:" + dataTotal.getIp1Total());
-            Console.log(IP.IP2 + "=> log:" + dataTotal.getLog2Total() + "  ip:" + dataTotal.getIp2Total());
-            Console.log(IP.IP3 + "=> log:" + dataTotal.getLog3Total() + "  ip:" + dataTotal.getIp3Total());
-            Console.log(IP.IP4 + "=> log:" + dataTotal.getLog4Total() + "  ip:" + dataTotal.getIp4Total());
-            Console.log(IP.IP5 + "=> log:" + dataTotal.getLog5Total() + "  ip:" + dataTotal.getIp5Total());
-            Console.log(IP.IP6 + "=> log:" + dataTotal.getLog6Total() + "  ip:" + dataTotal.getIp6Total());
-            Console.log(IP.IP7 + "=> log:" + dataTotal.getLog7Total() + "  ip:" + dataTotal.getIp7Total());
+            Console.log(IP.IP1 + " => log:" + dataTotal.getLog1Total() + "  ip:" + dataTotal.getIp1Total());
+            Console.log(IP.IP2 + " => log:" + dataTotal.getLog2Total() + "  ip:" + dataTotal.getIp2Total());
+            Console.log(IP.IP3 + " => log:" + dataTotal.getLog3Total() + "  ip:" + dataTotal.getIp3Total());
+            Console.log(IP.IP4 + " => log:" + dataTotal.getLog4Total() + "  ip:" + dataTotal.getIp4Total());
+            Console.log(IP.IP5 + " => log:" + dataTotal.getLog5Total() + "  ip:" + dataTotal.getIp5Total());
+            Console.log(IP.IP6 + " => log:" + dataTotal.getLog6Total() + "  ip:" + dataTotal.getIp6Total());
+            Console.log(IP.IP7 + " => log:" + dataTotal.getLog7Total() + "  ip:" + dataTotal.getIp7Total());
             Console.log("合计 => log:" + dataTotal.getAllLogTotal()+ "  ip:"+dataTotal.getAllIpTotal());
             Console.log("OK!用时:{}秒", timer.intervalSecond());
         } catch (Exception ex) {
