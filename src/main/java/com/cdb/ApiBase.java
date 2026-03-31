@@ -56,7 +56,7 @@ public class ApiBase {
                     .header("X-Csrf_Refresh_Token", ReUtil.getGroup1("csrf_refresh_token=([^;]+)", ipCookie.getCookie()))
                     .header("X-Nonce", xNonce)
                     .header("X-Sign", xSign)
-                    .timeout(10000)
+                    .timeout(1000*60)
                     .body(jsonBody)
                     .execute().body();
             //Console.log("repsBody:"+repsBody);
@@ -90,7 +90,7 @@ public class ApiBase {
                     .header("X-Csrf_Refresh_Token", ReUtil.getGroup1("csrf_refresh_token=([^;]+)", ipCookie.getCookie()))
                     .header("X-Nonce", xNonce)
                     .header("X-Sign", xSign)
-                    .timeout(10000)
+                    .timeout(1000*60)
                     .body(jsonBody)
                     .execute().body();
             //Console.log("repsBody:"+repsBody);
