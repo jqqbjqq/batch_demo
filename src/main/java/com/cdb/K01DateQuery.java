@@ -13,21 +13,9 @@ import java.util.Scanner;
 
 public class K01DateQuery extends ApiBase{
 
-    private static void settingParam() {
-        String c_log7Total = setting.get("log7_total");
-        if (StrUtil.isNotBlank(c_log7Total)) {
-            log7Total = Long.parseLong(c_log7Total);
-        }
-        String c_ip7Total = setting.get("ip7_total");
-        if (StrUtil.isNotBlank(c_ip7Total)) {
-            ip7Total = Long.parseLong(c_ip7Total);
-        }
-    }
-
     public static void main() {
         try {
             TimeInterval timer = DateUtil.timer();
-            settingParam();
             Scanner scanner = new Scanner(System.in);
 
             Console.log("请输入开始日期，格式为(YYYY-MM-dd HH:mm:ss):");
@@ -80,10 +68,11 @@ public class K01DateQuery extends ApiBase{
                 } else if (StrUtil.contains(ipCookie.getUrl(), IP.IP6)) {
                     dataTotal.setLog6Total(logTotal);
                     dataTotal.setIp6Total(ipTotal);
+                } else if (StrUtil.contains(ipCookie.getUrl(), IP.IP7)) {
+                    dataTotal.setLog7Total(logTotal);
+                    dataTotal.setIp7Total(ipTotal);
                 }
             });
-            dataTotal.setLog7Total(log7Total);
-            dataTotal.setIp7Total(ip7Total);
             dataTotal.setAllLogTotal(dataTotal.getLog1Total() + dataTotal.getLog2Total() + dataTotal.getLog3Total()
                     + dataTotal.getLog4Total() + dataTotal.getLog5Total() + dataTotal.getLog6Total() + dataTotal.getLog7Total());
             dataTotal.setAllIpTotal(dataTotal.getIp1Total() + dataTotal.getIp2Total() + dataTotal.getIp3Total()
